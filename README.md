@@ -208,6 +208,29 @@ In-container (Q2_0): 351 tok/s prefill, 36.8 tok/s decode, ~94% expert-cache hit
 
 ---
 
+## Troubleshooting
+
+**`docker pull` fails with `408 Request Timeout` / `429` / `502`**
+The image is fine (2.23 GB compressed; the registry digest is correct). These are **network/registry timeouts on large layers**. Docker resumes already-downloaded layers, so just repeat:
+```bash
+docker pull xxdoman/strata-mi50:latest      # run it 2-3 times — each attempt resumes
+# or pull by digest (skips the tag lookup):
+docker pull xxdoman/strata-mi50@sha256:6e65ddf1a5b284f356678728c936fa14e650405bec6dfb19984c794e8a7dad1a
+```
+In **Portainer**, the pull window has its own timeout and tends to hit 408 on big layers — pull from the **CLI** first, then Deploy in Portainer (the image is already local).
+
+**Data landed in `/test` (or `/strata`) instead of my home** — you wrote `~...` in a **Portainer** stack. Portainer does not expand `~`. Use the absolute path `/home/<your-user>/strata/...`, then redeploy.
+
+**Container starts, page shows only the configurator, no model** — normal with no config on the volume. Pick a model in section **1** and **Save and load** (build the data first in **0. Setup** if the list is empty).
+
+**Restart does not bring the model back** — the config must be on the mounted `/work` volume (env `CONFIG=/work/strata-config.json`). If you changed volume paths, the old config is elsewhere.
+
+**`HTTP 000` / connection refused on :8085 right after start** — the engine takes ~1-2 minutes to load the model. The configurator shows the live engine log; wait for `ready`.
+
+**Engine exits with `GLIBC_2.43 not found`** — you are running an engine built on a newer host glibc. Use the published image as-is (built on ROCm 7.2.1, glibc 2.39); do not rebuild the binary on a newer host.
+
+---
+
 ## Portainer stack
 
 ```yaml
