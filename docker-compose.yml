@@ -1,0 +1,33 @@
+# Strata gfx906 — MI50 / MI60 / Radeon VII
+# Engine :8085 (API + built-in chat)  ·  Configurator :8090 (web)
+# Data lives in ~/strata/ (your home, no sudo). On a normal host `docker compose`
+# expands ~ for you; in Portainer it does NOT — use absolute /home/<user>/strata/... there.
+services:
+  strata:
+    image: xxdoman/strata-mi50:latest
+    container_name: strata
+    restart: unless-stopped
+    shm_size: 16g
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    device_cgroup_rules:
+      - 'c 226:* rmw'
+    ports:
+      - "8085:8085"     # engine (API + built-in chat)
+      - "8090:8090"     # configurator (web)
+    ulimits:
+      memlock: -1
+    security_opt:
+      - seccomp=unconfined
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=9.0.6
+      - LD_LIBRARY_PATH=/opt/rocm/lib
+      - CONFIG=/work/strata-config.json
+      - WEB_PORT=8090
+      - ENGINE_PORT=8085
+      # - ROCR_VISIBLE_DEVICES=0     # multi-GPU: which AMD card (index from rocm-smi)
+    volumes:
+      - ~/strata/gguf:/models                  # GGUF shards + mmproj (RW for the setup wizard)
+      - ~/strata/Strata-data:/data             # packs/ + mtp/ + expert-profile.bin (RW for the wizard)
+      - ~/strata/Strata-data/configs:/work     # RW — the configurator writes the config here
