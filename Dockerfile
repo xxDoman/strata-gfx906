@@ -1,15 +1,22 @@
-# Strata 0.1.39 dla MI50 / gfx906 — obraz "odpal i dziala"
+# Strata 0.1.40 dla MI50 / gfx906 — obraz v4 (0.1.40.v2)
 #
-# Baza: rocm/dev-ubuntu-24.04:7.2.1 — DOKLADNIE ta sama wersja ROCm, na ktorej zbudowano
-# binarke gfx906. Nowe ROCm (10.x) NIE MA kerneli gfx906 (rocBLAS startuje od gfx1010).
-# Nawet 7.2.1 z officiala ich nie ma — pakujemy sprawdzone biblioteki z HOSTA (ten sam
-# wzorzec co ollama-mi50: obraz = binarka + biblioteki, ktore znaja karte).
+# Bazuje na obrazie 0.1.39.v3 (konfigurator + rezerwa VRAM per karta), ale z silnikiem 0.1.40.
+# 0.1.40 zawiera juz upstreamem to, co w 0.1.39 patchowalismy osobno:
+#   #808 (cudaFuncSetAttribute jako funkcja) i #854 (helper GPU nie w udziale PCIe).
+# NIE kompiluje sie jednak na gfx906 wprost — sa 3 bledy (bramki STRATA_USE_HIP nie lapia
+# STRATA_HIP_GFX906). Naprawione w zrodle (patch patches/0.1.40-gfx906-fixes.diff):
+#   src/kernels/cuda/fused_gr.cu  return; -> return false;
+#   src/core/mtp.cpp              + && !defined(STRATA_HIP_GFX906)
+#   src/core/vmm.cpp              + && !defined(STRATA_HIP_GFX906)
+# Dodatkowo dp4a dla gfx906 (intrinsics.hpp): v_dot4_i32_i8 zamiast petli 4 iteracji (+2-4% decode).
+# Zgloszone upstream jako PR #1066 (build fix) i #1067 (dp4a).
 #
-# Rozmiar: ~6 GB (baza 3,9 + libki 1,2 + kernele rocBLAS 0,68).
+# Baza: rocm/dev-ubuntu-24.04:7.2.1. Biblioteki + kernele gfx906 (golden, 156 gfx906 + 54 fallback)
+# kopiowane z HOSTA — oficjalny obraz nie ma kerneli gfx906.
 #
 # Build (z katalogu strata-docker/):
-#   ./prepare-rocm.sh          # kopiuje libki + kernele gfx906 z /opt/rocm-7.2.1
-#   docker build -f Dockerfile.mi50 -t strata-mi50:0.1.35 .
+#   ./prepare-rocm.sh
+#   docker build -f Dockerfile.v40 -t xxdoman/strata-mi50:0.1.40.v2 .
 
 FROM rocm/dev-ubuntu-24.04:7.2.1
 
@@ -24,37 +31,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 python3-pip ca-certificates curl libatomic1 libgomp1 libnuma1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Zaleznosci runtime serwera (z requirements.txt) — bez tego serve/ sie nie laduje.
 RUN pip3 install --no-cache-dir --break-system-packages \
         jinja2==3.1.6 pillow==12.3.0 psutil==7.2.2 pyyaml==6.0.3 regex==2026.9.10 numpy \
         requests tqdm
 
-# Biblioteki gfx906 z hosta (7.2.1) — nadpisuja obrazowe, ktore nie maja gfx906.
 COPY rocm-libs/*.so* /opt/rocm/lib/
-# Kernele rocBLAS dla gfx906 (bez nich prefill/GEMM nie ma kodu dla karty).
 COPY rocm-libs/rocblas-library/ /opt/rocm/lib/rocblas/library/
-# Odswiez soname (podmienione pliki maja te same nazwy wersji co baza 7.2.1).
 RUN ldconfig && ls /opt/rocm/lib/librocblas.so.5 >/dev/null && \
     ls /opt/rocm/lib/rocblas/library/*gfx906* | wc -l | grep -q '^1*[0-9]'
 
 WORKDIR /opt/strata
-COPY src-serve-39/        /opt/strata/serve/
+COPY src-serve-40/        /opt/strata/serve/
 COPY src-tools/strata_tokenizer.py /opt/strata/strata_tokenizer.py
-COPY bin/strata-gfx906-0.1.39 /opt/strata/engine/strata
+# 0.1.40 + 3 build fixy (gfx906) + dp4a gfx906
+COPY bin/strata-gfx906-0.1.40 /opt/strata/engine/strata
 COPY bin/strata-vision-0.1.39 /opt/strata/engine/strata-vision
-# Konfigurator + launcher (web UI :8090); entrypoint startuje go jako PID 1.
 COPY strata-launcher.py   /opt/strata/strata-launcher.py
 COPY strata_setup.py      /opt/strata/strata_setup.py
-# Bazowy config (standalone): launcher kopiuje go na /work, jesli tam nie ma.
 COPY default-config.json  /opt/strata/default-config.json
 COPY docker-entrypoint.sh /opt/strata/docker-entrypoint.sh
 
-# --- Setup tools: download the GGUF from HuggingFace + build packs/tokenizer/MTP in-container ---
-# The image ships ONLY the data tools (not setup.py: on Linux it would fetch its own CUDA engine
-# and clash with the gfx906 one). These build the model data from a GGUF the wizard downloads.
-COPY tools39/                 /opt/strata/tools/
+COPY tools40/                 /opt/strata/tools/
 COPY third_party-gguf-py/   /opt/strata/third_party/llama.cpp/gguf-py/
-COPY data/                  /opt/strata/data/
+COPY data40/                  /opt/strata/data/
 RUN chmod +x /opt/strata/engine/strata /opt/strata/engine/strata-vision \
              /opt/strata/strata-launcher.py /opt/strata/docker-entrypoint.sh
 
