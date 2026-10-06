@@ -185,6 +185,8 @@ The image encoder (`strata-vision`) is a **CPU build** — it works inside the R
 
 CPU encoding is fast enough for still images (a 2-second answer for one photo on an MI50).
 
+> **The encoder is deliberately an AVX2 build** (`GGML_AVX512=OFF`), and it is the right choice even on machines that *do* have AVX-512. This encoder's head size (72) is not a multiple of the AVX-512 vector width (16), so on an AVX-512 build ggml's CPU flash attention leaves the fast tiled kernel for a per-row fallback: ~3.3× slower and 26% off in the embeddings. An AVX2 build keeps the tiled kernel (72 % 8 == 0). Upstream addresses the same issue in [PR #1086](https://github.com/Niko1221/Strata/pull/1086). **Do not rebuild this encoder as "native/AVX-512".**
+
 ---
 
 ## Measured performance (MI50 32 GB)
