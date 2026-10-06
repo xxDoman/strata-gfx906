@@ -4,8 +4,9 @@
 
 One image = **engine + server + configurator + setup wizard**. Pick a model in the browser, click once, and you get an OpenAI/Anthropic-compatible API and a chat UI — no host steps, no manual pack building.
 
-- Image: [`xxdoman/strata-mi50`](https://hub.docker.com/r/xxdoman/strata-mi50) (tags `latest`, `0.1.39`)
-- Engine build: Strata **v0.1.39**, gfx906 backend (`-DSTRATA_HIP_GFX906=ON`), ROCm 7.2.1
+- Image: [`xxdoman/strata-mi50`](https://hub.docker.com/r/xxdoman/strata-mi50) (tags `latest`, `0.1.40`, `0.1.39`)
+- Engine build: Strata **v0.1.40**, gfx906 backend (`-DSTRATA_HIP_GFX906=ON`), ROCm 7.2.1
+  - The upstream v0.1.40 tree does **not** compile on gfx906 on its own (three `STRATA_USE_HIP` gates miss `STRATA_HIP_GFX906`). This image carries those three fixes plus a signed-dot4 (`v_dot4_i32_i8`) path for `__dp4a` on gfx906. Both are proposed upstream: PR [#1083](https://github.com/Niko1221/Strata/pull/1083) (build fix) and PR [#1084](https://github.com/Niko1221/Strata/pull/1084) (dp4a).
 - Why this image exists: upstream Strata ships prebuilt engines for NVIDIA and RDNA only — **gfx906 has no ready-made engine**, so this image provides one (built from source with the gfx906 path) plus the gfx906 ROCm libraries and rocBLAS kernels.
 
 ---
@@ -188,14 +189,18 @@ CPU encoding is fast enough for still images (a 2-second answer for one photo on
 
 ## Measured performance (MI50 32 GB)
 
-Strata 0.1.39, IQ2_XS, 4K prompt, 256-token decode, `--spec 3`, expert cache auto:
+Strata **0.1.40** (this image), MI50 master + Radeon VII helper, IQ3_XXS, 11552-token prompt, 128-token decode, `--spec 3`, expert cache auto:
 
 | build | prefill | decode |
 |---|---|---|
-| **0.1.39 (this image)** | 293 tok/s | **42.5 tok/s** |
-| 0.1.38 + local gfx906 patches | 294 tok/s | 32.4 tok/s |
+| **0.1.40 (this image)** | ~380 tok/s | **~39-40 tok/s** |
+| 0.1.39 (previous image) | ~380 tok/s | ~38-39 tok/s |
 
-In-container (Q2_0): 351 tok/s prefill, 36.8 tok/s decode, ~94% expert-cache hit, MTP 4/4 drafts accepted. Correctness `17*23 → 391`. Numbers drift a few % between sessions — measure interleaved for comparisons.
+The `dp4a` signed-dot4 path adds ~2-4% decode on gfx906 (the portable `__dp4a` loop is 4 iterations; gfx906 has `v_dot4_i32_i8`). Prefill is unchanged. Earlier 0.1.39 measurement (IQ2_XS, 4K prompt): 293 tok/s prefill, 42.5 tok/s decode. Numbers drift a few % between sessions — measure interleaved for comparisons.
+
+### Per-card VRAM reserve
+
+The configurator detects which card drives the display (`/sys/class/drm/*/status == connected`) and keeps the VRAM reserve **on that card** — so the desktop and image rendering stay alive — while cards with no monitor are filled to the edge (`--vram-reserve-later-mib 0` for a split, an explicit slot count for a helper). The main card keeps `--vram-reserve-mib` (default 1024 MiB).
 
 ---
 
