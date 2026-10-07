@@ -363,4 +363,16 @@ The RTX 4070 rows are the same model on a different card, for reference.
   filled to the edge (`--vram-reserve-later-mib 0` for a split). Helper cards have no reserve flag, so
   when the helper drives the display the configurator computes an explicit slot count instead of `auto`.
 
+---
+
+## License
+
+This packaging (the Dockerfiles, `docker-compose.yml`, the configurator glue and this README) is
+**MIT** — see [LICENSE](LICENSE).
+
+It redistributes the **Strata engine**, which is also **MIT**, `Copyright (c) 2026 Niko1221 and the
+Strata contributors` (https://github.com/Niko1221/Strata). MIT requires the original copyright
+notice to travel with the binary; it is kept verbatim in [LICENSE](LICENSE). The base ROCm images
+and the model weights (downloaded separately, not in this image) keep their own licenses.
+
 Strata on GitHub: https://github.com/Niko1221/Strata

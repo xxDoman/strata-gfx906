@@ -27,6 +27,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
     ROCR_VISIBLE_DEVICES=0 \
     LD_LIBRARY_PATH=/opt/rocm/lib
 
+LABEL org.opencontainers.image.title="xxdoman/strata-mi50" \
+      org.opencontainers.image.description="Strata engine (Qwen3.8-Flash-Next) for AMD gfx906 (MI50/MI60/Radeon VII) with a web configurator and a network pool" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.url="https://hub.docker.com/r/xxdoman/strata-mi50" \
+      org.opencontainers.image.source="https://github.com/xxDoman/strata-gfx906" \
+      org.opencontainers.image.vendor="xxDoman"
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 python3-pip ca-certificates curl libatomic1 libgomp1 libnuma1 \
     && rm -rf /var/lib/apt/lists/*
