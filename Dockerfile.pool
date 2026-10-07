@@ -1,0 +1,79 @@
+# Strata 0.1.40.1 + POOL SIECIOWY + zakladka Help — obraz PRODUKCYJNY
+#
+# Bazuje na Dockerfile.1187 (0.1.40 + fixy gfx906 + dp4a), ale:
+#   1. NIE zawiera PR #1187. Pomiary A/B na Lively (11 552-tok prompt, 4 przebiegi
+#      przeplatane 7/13/7/13) nie potwierdzily zysku: EXP7 = 38,7 / 38,8 tok/s,
+#      EXP13 = 39,0 / 39,0 tok/s, prefill identyczny (235/236). Roznica 0,3-0,5%
+#      to szum. PR zostaje opt-in, ale nie w obrazie.
+#   2. Silnik: bin/strata-gfx906-0.1.40-pool = 0.1.40 + 3 fixy gfx906 + dp4a
+#      + src/pool/link.cpp (pool sieciowy, fork fragtion/StrataPool, branch pool-support).
+#      Ma 9 flag --pool-*: --pool-listen --pool-peers --pool-split --pool-workers
+#      --pool-wire --pool-draft-wire --pool-secret --pool-affinity --pool-timeout-s.
+#   3. serve/ z forka pool-support: DOKLADNIE hotfixy 0.1.40.1 (frontend.py bajt w bajt
+#      identyczny z v0.1.40.1) + pool.py + route.py + zakladka Pool w UI.
+#
+# Weryfikacja zgodnosci zrodel (md5):
+#   src-serve-40/server.py  ==  upstream v0.1.40.1/server.py   (789d357c)
+#   fork/serve/frontend.py  ==  upstream v0.1.40.1/frontend.py (d118a81d)
+#   fork/serve/server.py    ==  v0.1.40.1 + pool               (790ad745)
+#
+# Baza: rocm/dev-ubuntu-24.04:7.2.1 + biblioteki i kernele gfx906 z hosta (golden).
+#
+# Build (z katalogu strata-docker/):
+#   docker build -f Dockerfile.pool -t xxdoman/strata-mi50:0.1.40.1-pool .
+
+FROM rocm/dev-ubuntu-24.04:7.2.1
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    LANG=C.UTF-8 \
+    HSA_OVERRIDE_GFX_VERSION=9.0.6 \
+    ROCR_VISIBLE_DEVICES=0 \
+    LD_LIBRARY_PATH=/opt/rocm/lib
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates curl libatomic1 libgomp1 libnuma1 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir --break-system-packages \
+        jinja2==3.1.6 pillow==12.3.0 psutil==7.2.2 pyyaml==6.0.3 regex==2026.9.10 numpy \
+        requests tqdm
+
+COPY rocm-libs/*.so* /opt/rocm/lib/
+COPY rocm-libs/rocblas-library/ /opt/rocm/lib/rocblas/library/
+RUN ldconfig && ls /opt/rocm/lib/librocblas.so.5 >/dev/null && \
+    ls /opt/rocm/lib/rocblas/library/*gfx906* | wc -l | grep -q '^1*[0-9]'
+
+WORKDIR /opt/strata
+COPY src-serve-pool/        /opt/strata/serve/
+COPY src-tools/strata_tokenizer.py /opt/strata/strata_tokenizer.py
+# 0.1.40 + 3 build fixy (gfx906) + dp4a gfx906 + pool sieciowy (src/pool/link.cpp)
+COPY bin/strata-gfx906-0.1.40-pool /opt/strata/engine/strata
+COPY bin/strata-vision-0.1.39 /opt/strata/engine/strata-vision
+COPY strata-launcher.py   /opt/strata/strata-launcher.py
+COPY strata_setup.py      /opt/strata/strata_setup.py
+COPY default-config.json  /opt/strata/default-config.json
+COPY docker-entrypoint.sh /opt/strata/docker-entrypoint.sh
+
+COPY tools40/                 /opt/strata/tools/
+COPY third_party-gguf-py/   /opt/strata/third_party/llama.cpp/gguf-py/
+COPY data40/                  /opt/strata/data/
+RUN chmod +x /opt/strata/engine/strata /opt/strata/engine/strata-vision \
+             /opt/strata/strata-launcher.py /opt/strata/docker-entrypoint.sh
+
+# Test importow scalonego serve/ — lapie braki na etapie BUILDA, nie na produkcji.
+RUN cd /opt/strata && python3 -c "\
+import sys; sys.path.insert(0, '/opt/strata');\
+import serve.server, serve.frontend, serve.pool, serve.route;\
+print('serve imports OK: server, frontend, pool, route')"
+
+# Help silnika dla zakladki Help w konfiguratorze — generowany PRZY BUDOWIE z wlasnie wbita binarka.
+# --help leci na STDERR (dlatego 2>&1) i konczy sie kodem 0 nawet gdy nic nie wypisze,
+# dlatego JEDYNYM zabezpieczeniem jest test rozmiaru (pusty plik = zepsuty Help w obrazie).
+RUN /opt/strata/engine/strata --help > /opt/strata/data/engine-help.txt 2>&1 \
+ && test "$(wc -c < /opt/strata/data/engine-help.txt)" -gt 5000 \
+ && echo "engine-help.txt: $(wc -lc < /opt/strata/data/engine-help.txt) (linie slowa)"
+
+VOLUME ["/models", "/data", "/work"]
+EXPOSE 8084 8090
+ENTRYPOINT ["/opt/strata/docker-entrypoint.sh"]
