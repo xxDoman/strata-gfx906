@@ -1,6 +1,4 @@
-# Strata gfx906 - MI50 / MI60 / Radeon VII
-
-Docker image: [`xxdoman/strata-mi50`](https://hub.docker.com/r/xxdoman/strata-mi50)
+# xxdoman/strata-mi50
 
 **Strata engine (Qwen3.8-Flash-Next) for AMD Instinct MI50 / gfx906 — self-contained Docker image with a built-in web configurator.**
 
@@ -14,24 +12,30 @@ License: Strata is **MIT** — repackaging and redistribution are allowed (keep 
 
 ## What is in this image
 
-- **Engine v0.1.40** with the gfx906 build fixes (below).
-- **Server hotfixes from upstream v0.1.40.1** — tool calls inside code fences, a request meeting a
-  restart in progress, `--batch` whose engine died during its prompt read, and the four-part version
-  tag. Pure Python; no engine changes.
+- **Engine v0.1.40.4** (newest tag) with the gfx906 build fixes (below). The configurator, Help tab
+  and per-card VRAM reserve are in every current tag.
 - **Network pool** (`serve/pool.py`, `serve/route.py`, the **Pool** tab) — split the model across
   several PCs over TCP, the way `llama.cpp` RPC does, but moving *layers* instead of computations.
   Each PC runs a full engine with its own layers, so cards of **different vendors never share a
   driver** — a Radeon and an MI50 on one machine, or a laptop over Wi-Fi. Roles are set in the
   **Pool** tab: `off` / `router` / `coordinator` / `worker`. Default role is `off`.
+
+  ⚠ **Test phase.** The network pool ships **only in the `0.1.40.1-pool` tag** (a fork built on
+  engine 0.1.40); it is **not** in `0.1.40.4`, whose engine has no `--pool-listen`. The link layer
+  is proven GPU-less (`strata-pool-link-test`), but a full two-machine run is still ahead — treat it
+  as experimental, not production. Note: the engine flag `--pool-tasks` is unrelated (it is the
+  **CPU** expert pool for MoE, not the network).
 - **Help tab** in the configurator — the engine's full flag reference, captured from the binary at
   image build time, so it updates itself with every release.
 
 ### The gfx906 build fixes
 
-The upstream 0.1.40 tree does not compile for gfx906 at all: three `STRATA_USE_HIP` gates miss
-`STRATA_HIP_GFX906`. Fixed in this image (`src/core/vmm.cpp`, `src/core/mtp.cpp`,
-`src/kernels/cuda/fused_gr.cu`), plus a signed-dot4 (`v_dot4_i32_i8`) path for `__dp4a` on gfx906.
-Proposed upstream as PR #1083 (build fix) and #1084 (dp4a).
+The gfx906 gates (`src/core/vmm.cpp`, `src/core/mtp.cpp`, `src/kernels/cuda/fused_gr.cu`) landed
+upstream in **0.1.40.2** — 0.1.40.4 builds for gfx906 with no engine patch. dp4a for gfx906
+(`v_dot4_i32_i8`) is also upstream (in `strata_hip.h`) and **works**: measured A/B decode
+**+12..17%**, prefill unchanged. PR #1083 (build fix) and #1084 (dp4a) were ours; #1084 turned out
+to be a **no-op** on gfx906 (the `intrinsics.hpp` path is not compiled there — the binary is
+byte-identical with and without it).
 
 ### About the 0.1.40.1 naming
 
@@ -43,9 +47,10 @@ the engine version.
 
 ## Tags
 
-- `latest` / `0.1.40.1` / `0.1.40.1-pool` — the current image (all three names point at the same
-  digest). Engine **v0.1.40** + upstream **v0.1.40.1** server hotfixes + **network pool** +
-  **Help** tab + per-card VRAM reserve.
+- `0.1.40.4` — **newest**: engine **v0.1.40.4** + configurator + **Help** tab + per-card VRAM reserve.
+  No engine patch needed (gfx906 gates are upstream since 0.1.40.2); dp4a is in. **No network pool.**
+- `latest` / `0.1.40.1` / `0.1.40.1-pool` — engine **v0.1.40** + upstream **v0.1.40.1** server
+  hotfixes + **network pool** (test phase) + **Help** tab + per-card VRAM reserve.
 - `0.1.40` — the previous image: engine v0.1.40, server v0.1.40, **no pool**, no Help tab.
 - `0.1.39` — engine **v0.1.39** (the release before that).
 - `0.1.38-setup` — engine **v0.1.38** + the **in-browser setup wizard** (download + build the model
@@ -56,7 +61,7 @@ All tags include the configurator UI in **English** with an **EN/PL** toggle; th
 
 ## Two ways to get the model data
 
-### Option 1 — the built-in wizard (easiest, in `latest` / `0.1.40.1-pool` and `0.1.38-setup`)
+### Option 1 — the built-in wizard (easiest, in `0.1.40.4`, `latest` / `0.1.40.1-pool` and `0.1.38-setup`)
 
 No host steps, no scripts. Open **http://<host>:8090** and use section **0. Setup**:
 
@@ -155,10 +160,6 @@ docker run -d --name strata --restart unless-stopped \
 
 Open **http://<host>:8090** (configurator) and **http://<host>:8085** (engine chat / API).
 
-> **Portainer.** Portainer passes volume paths through verbatim - `~` is **not** expanded, so
-> `~/strata/gguf` becomes the literal `/strata/gguf` (a root folder). In Portainer always use absolute
-> paths: `/home/<your-user>/strata/gguf` (find yours with `echo $HOME`).
-
 ---
 
 ## How it works
@@ -193,18 +194,6 @@ When the engine is running, the **Engine state** section shows a clickable **ser
 built-in chat/API UI directly — including from another PC on the LAN.
 
 The UI is **English by default**; toggle **EN / PL** in the top-right corner (remembered in `localStorage`).
-
-### API key
-
-- **Default: `1234`** (built into the container, used by the built-in chat and every API call).
-- **Where to change it:** the configurator (:8090) -> **4. Settings -> API key** -> type a new key ->
-  **Save and load**. The engine restarts with the new key; the config on the volume keeps it, so it also
-  survives a container restart.
-- Any client (OpenAI SDK, Anthropic SDK, Codex, `curl`, another app) must send the **same** key.
-  The built-in chat uses the key from the config automatically - nothing to set there.
-
-> **Before exposing the ports to a network** (not just `localhost`), set a long random key. With a
-> trivial key like `1234` anyone on the LAN can use your model. There is no other access control.
 
 ### Environment variables
 
@@ -246,7 +235,7 @@ image and are **not** taken from anyone's personal folder. Each piece comes from
 
 You produce those files **one of two ways**:
 
-- **Option 1 (easiest):** the built-in wizard in this image (`0.1.40`/`latest` or `0.1.38-setup`) does it — see above.
+- **Option 1 (easiest):** the built-in wizard in this image (`0.1.40.4`/`latest` or `0.1.38-setup`) does it — see above.
 - **Option 2:** run upstream Strata's own setup **on the host** (Linux `./setup.sh`, Windows `START-HERE.bat`,
   or `docs/AI_SETUP.md`), then mount the resulting `Strata-data`:
 
@@ -285,7 +274,11 @@ The encoder runs on CPU by design (`"gpu": false`); on gfx906 the GPU vision pat
 
 ---
 
-## Pool (several PCs, one model)
+## Pool (several PCs, one model) — test phase
+
+> ⚠ **Experimental.** The network pool is **only in the `0.1.40.1-pool` tag** (fork on engine
+> 0.1.40). The `0.1.40.4` engine has no `--pool-listen`. The link layer is proven GPU-less
+> (`strata-pool-link-test`), but a full run across two machines is still ahead. Not for production.
 
 The **Pool** tab splits the model across machines over TCP. Each PC runs a full engine with its own
 layers, so cards of different vendors never share a driver. Roles: `off` / `router` (whole model on
@@ -351,12 +344,12 @@ The RTX 4070 rows are the same model on a different card, for reference.
 
 ## Tags / engine
 
-- Engine **v0.1.40** (gfx906 build: 3 compile fixes for the gfx906 path + `v_dot4_i32_i8` for `__dp4a`),
-  `--spec 3` speculative decoding, MTP, `--kv int8`.
-- Server hotfixes from upstream **v0.1.40.1** and the **network pool** (`serve/pool.py`,
-  `serve/route.py`, Pool tab) — layer split across PCs, `--pool-listen` / `--pool-peers`.
-- Measured on MI50 32 GB (this image, MI50 master + Radeon VII helper, IQ3_XXS, 11552-token prompt):
-  ~380 tok/s prefill, ~39-40 tok/s decode. The gfx906 `dp4a` path adds ~2-4% decode over the portable loop.
+- Engine **v0.1.40.4** (newest tag) — gfx906 gates are upstream since 0.1.40.2, dp4a (`v_dot4_i32_i8`)
+  is upstream and works; `--spec N` speculative decoding, MTP, `--kv int8`.
+- Engine **v0.1.40** + upstream **v0.1.40.1** server hotfixes and the **network pool** (`serve/pool.py`,
+  `serve/route.py`, Pool tab) — layer split across PCs, `--pool-listen` / `--pool-peers` — **test phase** (`0.1.40.1-pool` only).
+- Measured on MI50 32 GB (this image, IQ2_XS split MI50+Radeon VII, 11552-token prompt):
+  **~498 tok/s prefill, ~40 tok/s decode**. dp4a adds **+12..17% decode** over the portable loop (A/B).
 - **VRAM reserve is per card.** The configurator detects which card drives the display
   (`/sys/class/drm/*/status == connected`) and keeps the reserve there — that card keeps
   `--vram-reserve-mib` free (so the desktop and image rendering stay alive); cards with no monitor are
@@ -368,11 +361,11 @@ The RTX 4070 rows are the same model on a different card, for reference.
 ## License
 
 This packaging (the Dockerfiles, `docker-compose.yml`, the configurator glue and this README) is
-**MIT** — see [LICENSE](LICENSE).
+**MIT** — see `LICENSE` (repository).
 
 It redistributes the **Strata engine**, which is also **MIT**, `Copyright (c) 2026 Niko1221 and the
 Strata contributors` (https://github.com/Niko1221/Strata). MIT requires the original copyright
-notice to travel with the binary; it is kept verbatim in [LICENSE](LICENSE). The base ROCm images
+notice to travel with the binary; it is kept verbatim in `LICENSE` (repository). The base ROCm images
 and the model weights (downloaded separately, not in this image) keep their own licenses.
 
 Strata on GitHub: https://github.com/Niko1221/Strata
