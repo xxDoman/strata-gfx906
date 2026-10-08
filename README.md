@@ -47,14 +47,19 @@ the engine version.
 
 ## Tags
 
-- `0.1.40.4` — **newest**: engine **v0.1.40.4** + configurator + **Help** tab + per-card VRAM reserve.
-  No engine patch needed (gfx906 gates are upstream since 0.1.40.2); dp4a is in. **No network pool.**
-- `latest` / `0.1.40.1` / `0.1.40.1-pool` — engine **v0.1.40** + upstream **v0.1.40.1** server
-  hotfixes + **network pool** (test phase) + **Help** tab + per-card VRAM reserve.
+- `0.1.40.4` / `latest` — **newest**: engine **v0.1.40.4** + configurator + **Help** tab + per-card
+  VRAM reserve. No engine patch needed (gfx906 gates are upstream since 0.1.40.2); dp4a is in.
+  **No network pool.**
+- `0.1.40.1-pool` — engine **v0.1.40** + upstream **v0.1.40.1** server hotfixes + **network pool**
+  (test phase) + **Help** tab. This is the only tag that carries the pool; `0.1.40.1` is the same
+  image **without** the pool.
 - `0.1.40` — the previous image: engine v0.1.40, server v0.1.40, **no pool**, no Help tab.
 - `0.1.39` — engine **v0.1.39** (the release before that).
 - `0.1.38-setup` — engine **v0.1.38** + the **in-browser setup wizard** (download + build the model
   data without touching the host).
+
+> ⚠ `latest` moved to engine **0.1.40.4**, which has **no network pool**. If you want the pool, pull
+> `0.1.40.1-pool` explicitly.
 
 All tags include the configurator UI in **English** with an **EN/PL** toggle; the vision encoder is a
 **CPU** build (correct for gfx906).
@@ -221,7 +226,7 @@ Written by the configurator; you normally never edit it by hand. Key fields:
 ## Where the model files come from
 
 This image ships **only** the engine (prebuilt gfx906 binary + ROCm 7.2.1), the configurator, and —
-in the `0.1.40` / `latest` / `0.1.38-setup` tags — the **data tools**. The model and the data it consumes are **not** in the
+in the `0.1.40.4` / `latest` / `0.1.38-setup` tags — the **data tools**. The model and the data it consumes are **not** in the
 image and are **not** taken from anyone's personal folder. Each piece comes from a known source:
 
 | Piece | Where it comes from |
