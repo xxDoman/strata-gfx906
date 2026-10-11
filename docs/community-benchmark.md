@@ -1,8 +1,21 @@
 # Community benchmark — Strata's own suite on 2x gfx906
 
 Upstream ships a suite (`tools/strata_bench.py`, 0.1.43+) that drives the real HTTP API and writes a
-report you can paste into a GitHub issue or a pull request against `bench/results/`. This is a run
+report you can paste into a GitHub issue or a pull request against `bench/results/`. These are runs
 of it on this machine, plus the traps we hit while running it.
+
+> **Read this before comparing with anyone else's numbers.** This image is **not a stock install**,
+> and the report cannot say so — its line *"Settings: the install's own configuration, unchanged"*
+> describes the **config** (thinking off, temperature 0), not the image. What is ours in every number
+> below: the engine binary is built from tag v0.1.43 **plus our gfx906 build gates** (three HIP gates;
+> without them 0.1.40+ does not compile on gfx906) **and the rocBLAS solution-table reader**, our code
+> change based on the idea in [#981](https://github.com/Niko1221/Strata/pull/981) (upstream gates that
+> reader behind a path gfx906 never compiles). The image also turns the **solution table on by
+> default** (`STRATA_ROCBLAS_TUNING`) along with the **FP16 prompt path** it needs
+> (`STRATA_HIP_PROMPT_F16=1`) — the engine's own words are *"not bit-identical to the default"*.
+> Decode is unaffected by the table: we measured it as a prefill lever (+9.5% / +10.8% on IQ3, same
+> engine, A/B by environment). Quote these numbers as *"gfx906 image, table ON, FP16 prompt path"*,
+> never as stock 0.1.43.
 
 ## Run 1 — IQ1_M coder (split, no low-RAM)
 
@@ -91,9 +104,38 @@ Two "hit" numbers are in play here and they are **not** the same thing: the 71.0
 its own *expert* cache separately (`decode expert cache hit rate: 99.7%` on a test request in the
 same session). Never swap them.
 
-### Arm B — with `--mmap-experts`
+### Arm B — with `--mmap-experts` (experts read through the page cache)
 
-Appended when the run finishes; the comparison is the point of this section.
+```
+short chat            decode 41.2 tok/s   (34.8-53.0)     first token 0.69 s (0.58-0.76)
+4K prompt, fresh      prompt 473.6 tok/s  (375.1-477.0)  first token 8.52 s (8.46-10.75)
+16K prompt, fresh     prompt 543.9 tok/s  (543.2-546.1)  first token 29.56 s (29.45-29.60)
+agent session         decode 44.7 tok/s   (33.7-53.2)     first token 4.76 s (4.51-4.95)
+1 concurrent client   32.5 tok/s total    latency p50 3.932 s / p95 4.239 s, 0 errors
+```
+
+### The difference — medians, arm B against arm A
+
+```
+4K prompt tok/s      546.9  ->  473.6      -13.4%     range on B is wide: 375.1-477.0
+16K prompt tok/s     621.8  ->  543.9      -12.5%
+4K first token        7.38  ->   8.52      +15.4%
+16K first token      25.87  ->  29.56      +14.3%
+chat decode           44.0  ->   41.2       -6.4%     ranges overlap (41.9-62.1 vs 34.8-53.0)
+agent decode          41.7  ->   44.7       +7.2%     ranges overlap (34.9-62.0 vs 33.7-53.2)
+1 client, total       31.7  ->   32.5       +2.5%     A's range had a 13.3 outlier
+agent cache hit      71.0%  ->  70.7%       same
+```
+
+Read it as: **on a model that fits in RAM, `--mmap-experts` costs the prompt path ~12-13% and the
+first token ~14-15%**, while decode is not attributable — the ranges overlap, so that is noise, not
+a result. Two things in the raw data are worth watching rather than concluding from: arm B's 4K
+range (375.1) shows one run paying for a cold page cache, and in one arm-B session 73 earlier-turn
+tokens were read again against 4 in arm A (the conversation cache missing more). Both are consistent
+with the arena going through the page cache; neither is proven at n=3.
+
+**Not measured here, and worth someone's evening:** the case low-RAM exists for — a model whose
+expert arena is *larger* than RAM, where the resident mode cannot run at all.
 
 ## What the suite actually does
 
