@@ -19,6 +19,7 @@ and redistribution are allowed (keep the copyright notice).
 | [`docs/measurements.md`](docs/measurements.md) | Every number we took on this pair, each with its regime (power cap, quantisation, context, mode, image), both engine families kept apart, and the traps we walked into — sections are added, never deleted |
 | [`docs/community-benchmark.md`](docs/community-benchmark.md) | A run of Strata's own community suite on this hardware: the numbers, per-turn detail, how to repeat it |
 | [`docs/image-history.md`](docs/image-history.md) | What is in each tag, which fixes are ours, and what each one is worth in a measurement |
+| [`docs/rankings.md`](docs/rankings.md) | The same community results as two bar charts, decode and prefill |
 | [`docs/where-we-stand.md`](docs/where-we-stand.md) | Upstream's community results in one table with the regime visible, and where this box places |
 
 ---

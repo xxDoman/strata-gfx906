@@ -32,6 +32,7 @@ ship rocBLAS only from gfx1010, so without them these cards have no GEMM code).
 | [measurements.md](measurements.md) | Every measurement we took — both families (Strata and llama.cpp on the same pair), with the regime of each number, plus the traps we walked into |
 | [community-benchmark.md](community-benchmark.md) | A run of Strata's own community suite on this hardware, the exact numbers, and how to repeat it |
 | [image-history.md](image-history.md) | What each image version changed, which fixes are ours, what is upstream |
+| [rankings.md](rankings.md) | The same results as two bar charts — decode and prefill |
 | [where-we-stand.md](where-we-stand.md) | All community results in one table, regime visible, and where this box places |
 
 ## Numbers at a glance

@@ -35,35 +35,7 @@ and are not merged upstream yet. Everything else is copied from the entries, num
 | 2026-10-10 | AMD Radeon RX 9060 XT 16 GB (gfx1200), Ryzen 7 9800X3D, 64 | 16 GB | 0.1.40.3 | IQ2_XS | — | ? | prefill 593.3 / 879.4 tok/s at 8,019-token inputs (4,096 / 8,192 chunk); decode 52.7-57.9 tok/s; weighted engine decode 49.61 vs 42.52 for the two con | [2026-10-10-community-rx-9060-xt](../bench/results/2026-10-10-community-rx-9060-xt/README.md) |
 | 2026-10-10 | 2x Tesla P40 24 GB, Xeon E5-2699 v3, 125 GB RAM | 24 GB | 0.1.41 | IQ3_S | — | ? | decode 35.0 tok/s, prompt 350/558 tok/s at 3.9K/21.9K, needles 6/6, conversation checkpoints. | [2026-10-10-community-2x-p40-iq3_s](../bench/results/2026-10-10-community-2x-p40-iq3_s/README.md) |
 
-## Decode, side by side
-
-```
-  5090 + IQ2_XS                        179.4 / 175.7 / 165.0   (4K / 32K / 128K, old suite)
-  R9700 32 GB + IQ3_S                  87.6 - 101.9            (product-style run)
-  2x TITAN RTX 24 GB + IQ3_S           70.9 / 77.3 / 71.1      (262,144-token context)
-  Strix Halo + IQ4_XS                  59.2 / 57.8 / ...
-  RX 9070 16 GB + IQ3_XXS              58.7 / 57.9 / 57.9
-  2x MI50 16 GB (gfx906) + IQ1_M       50.1 / 47.8 / 45.7      (v0.1.38 + #637-#640)
-  ours, IQ1_M coder, 48 GB             49.4 chat / 49.5 agent  (new suite)
-  RTX 5060 Ti WSL2 + IQ3_S             48.2 / 47.7
-  ours, IQ3_XXS, 48 GB                 44.0 chat / 41.7 agent  (new suite)
-  2x P40 24 GB + IQ3_S                 35.0
-  Radeon Pro VII 16 GB (gfx906)        24.2 / 24.0 / 23.7
-```
-
-## Prompt (prefill), side by side
-
-```
-  2x TITAN RTX 24 GB + IQ3_S           868.9 / 1548.9 / 1626.9
-  Strix Halo + IQ4_XS                  969 / 1,067 / 1,031
-  RX 9070 16 GB + IQ3_XXS              586 / 804 / 833
-  ours, IQ1_M coder, 48 GB             604.2 (4K) / 756.5 (16K)
-  ours, IQ3_XXS, 48 GB                 546.9 (4K) / 621.8 (16K)
-  2x P40 24 GB + IQ3_S                 350 / 558
-  2x MI50 16 GB (gfx906) + IQ1_M       321 / 523 / 517
-  Radeon Pro VII 16 GB (gfx906)        350 / 339 / 284
-  RTX 5060 Ti WSL2 + IQ3_S             343 / 598
-```
+The two rankings of these same numbers — as bar charts — are on [rankings](rankings).
 
 ## What that placement actually is, in facts
 
