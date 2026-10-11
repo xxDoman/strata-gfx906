@@ -137,6 +137,27 @@ with the arena going through the page cache; neither is proven at n=3.
 **Not measured here, and worth someone's evening:** the case low-RAM exists for — a model whose
 expert arena is *larger* than RAM, where the resident mode cannot run at all.
 
+### A trap we are *not* in, and why it is worth knowing: `STRATA_ADAPT_OVERLAP`
+
+Upstream issue [#1964](https://github.com/Niko1221/Strata/issues/1964): on **Linux CUDA**, 0.1.43 turns
+`STRATA_ADAPT_OVERLAP` on by default — the adaptive tier's copies land while the next decode window
+already runs. Two users reproduced a **2-3x decode collapse** with it: RTX 4070 Ti **96.5 -> 37.9 tok/s**,
+RTX 4090 **19-37 -> 102-116 tok/s** once it was turned off — prefills, first tokens and cache hit rates
+all unchanged, so it looks like a code regression until you find the switch. `STRATA_ADAPT_OVERLAP=0`
+restores the older numbers. The engine's own source names the regime it belongs to: the *single-GPU,
+plain-RAM-arena decode loop* only, with the published wins on PCIe-bound small-VRAM cards
+(A4000 +5.5-8.3%, P100 +4.4%).
+
+On **HIP it is opt-in** (`STRATA_ADAPT_OVERLAP=1`) and the source says *"not measured yet"* — so every
+number on this page was taken with it **off**. That is confirmed in the engine log, not just in the
+source: the banner line it prints when the overlap is active (`strata serve: adaptive overlap ...`)
+appears **zero** times across our runs. Our gfx906 numbers are therefore unaffected by #1964.
+
+Two consequences worth keeping in mind. A gfx906 user on a **single** card with a plain RAM arena is
+the one regime where switching it on could be worth measuring — nobody has. And any **CUDA** entry in
+the community list measured on Linux 0.1.43 may be carrying this regression unless the entry says
+otherwise, which matters when comparing our rows with theirs.
+
 ## What the suite actually does
 
 Five steps, `Runs per size` repeats each one: chat (3 short questions, 100 new tokens), a fresh 4K
