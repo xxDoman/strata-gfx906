@@ -4,7 +4,7 @@ Upstream ships a suite (`tools/strata_bench.py`, 0.1.43+) that drives the real H
 report you can paste into a GitHub issue or a pull request against `bench/results/`. This is a run
 of it on this machine, plus the traps we hit while running it.
 
-## The run
+## Run 1 — IQ1_M coder (split, no low-RAM)
 
 ```
 Date       2026-10-11
@@ -14,7 +14,8 @@ Server     already running; model loading not timed
 GPU        AMD Instinct MI50 32GB + AMD Radeon VII 16GB, 48 GiB VRAM total
 CPU/RAM    12th Gen Intel Core i5-12400F (6 cores, 12 threads); 61.6 GiB
 Model      Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M   (pack coder-iq1_m)
-Config     context 131072, KV q4_0, prefill 2048, MTP spec 4, rocBLAS solution table ON
+Config     context 131072, KV q4_0, prefill 2048, MTP spec 4, rocBLAS solution table ON,
+           --layer-split auto (both cards), no --mmap-experts
 ```
 
 ## Results (median, with the range over the runs)
@@ -44,6 +45,55 @@ cache hit over the follow-up turns: 70.8%; earlier-turn tokens read again per se
 Read this with the regime in mind: `--runs 3` gives n=3 for the prompt tests and n=5 turns for the
 agent session, and the decode spread in the agent session (37.6 to 54.6) shows how much a single run
 can move. One run per test is not a result.
+
+## Run 2 — IQ3_XXS, split, low-RAM off vs on (2026-10-11)
+
+Same model, same config, **one switch apart**: only the expert-arena mode differs, so whatever moves
+is attributable to that switch and nothing else.
+
+| arm | expert arena | flag | status |
+| --- | --- | --- | --- |
+| **A** | experts load into pinned host RAM | *(none)* | measured, 3 runs — below |
+| **B** | experts are read through the page cache | `--mmap-experts` | in progress when this was written |
+
+Shared regime for both arms: model **Qwen3.8-Flash-Next-Uncensored-IQ3_XXS** (pack `orca-iq3_xxs`,
+profile `expert-profile.bin`), context 131072, KV q4_0, prefill 2048, MTP spec 4, min-p 0.9,
+`--vram-reserve-mib 1024 --vram-reserve-later-mib 1024`, `--layer-split auto`, engine 0.1.43.
+No `--resident-*` flags. The engine names the two modes itself, and that sentence is the whole
+difference being measured: arm A logs `expert arena: cudaHostRegister PORTABLE ok`, arm B logs
+`expert arena read through the file cache (buffered)`.
+
+### Arm A — no `--mmap-experts` (experts resident in host RAM)
+
+```
+short chat            decode 44.0 tok/s   (41.9-62.1)     first token 0.59 s (0.54-0.75)
+4K prompt, fresh      prompt 546.9 tok/s  (546.5-549.5)  first token 7.38 s (7.35-7.39)
+16K prompt, fresh     prompt 621.8 tok/s  (619.7-622.0)  first token 25.87 s (25.86-25.96)
+agent session         decode 41.7 tok/s   (34.9-62.0)     first token 4.18 s (3.86-10.85)
+1 concurrent client   31.7 tok/s total    latency p50 4.035 s / p95 9.077 s, 0 errors
+```
+
+Agent session, arm A (conversation cache — cache hit 71.0%, 4 earlier-turn tokens read again per
+session, first turn with nothing cached 2.57 s):
+
+```
+turn   prompt tok   reused   read    prompt tok/s   first token s   decode tok/s
+  0         609        0      609        244.8           2.572            36.2
+  1        2264      624     1640        425.6           3.892            41.5
+  2        3970     2327     1643        395.9           4.192            42.8
+  3        5676     4033     1643        399.6           4.152            43.1
+  4        7382     5739     1643        396.8           4.184            41.6
+  5        9067     7425     1642        396.4           4.184            41.7
+```
+
+Two "hit" numbers are in play here and they are **not** the same thing: the 71.0% above is the
+*conversation* cache (how much of a resent prompt the engine could reuse), while the engine reports
+its own *expert* cache separately (`decode expert cache hit rate: 99.7%` on a test request in the
+same session). Never swap them.
+
+### Arm B — with `--mmap-experts`
+
+Appended when the run finishes; the comparison is the point of this section.
 
 ## What the suite actually does
 
