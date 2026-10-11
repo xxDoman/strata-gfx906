@@ -14,8 +14,13 @@ worth in a measurement. Upstream's own engine changelog lives in their repositor
 ```
 
 `-roc981` marks builds that carry our rocBLAS solution table (see below). `0.1.43-roc981` is the
-engine in the current test image; what is on the Docker Hub tag `latest` is stated on the Hub page
-itself, and the README repeats it — check the live tag rather than a note like this one.
+engine in the **released** image: `xxdoman/strata-mi50:0.1.43` and `:latest` both point at it
+(published 2026-10-11). Tag state is still worth taking from the live Hub rather than from a note
+like this one:
+
+```bash
+curl -s https://hub.docker.com/v2/repositories/xxdoman/strata-mi50/tags?page_size=5 | python3 -m json.tool
+```
 
 ## What we patch, and what it is worth
 
