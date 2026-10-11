@@ -24,10 +24,14 @@ and redistribution are allowed (keep the copyright notice).
 
 ## What is in this image
 
-- **Engine v0.1.42** (newest tag, `latest`) — the gfx906 **build** fixes are upstream (commit
+- **Engine v0.1.43** (newest tag, `latest`) — the gfx906 **build** fixes are upstream (commit
   `a732a19`, verified on MI50 32 GB / gfx906 / ROCm-HIP) and dp4a (`v_dot4_i32_i8`) is in and works.
-  **This tag does carry one patch of ours:** the **rocBLAS solution table** — see below. Configurator,
-  Help tab, Benchmark tab and per-card VRAM reserve in every current tag.
+  **This tag carries two patches of ours:** the **rocBLAS solution table** in the engine and the
+  community benchmark's **report header on AMD** in the tools — both below. On gfx906 the 0.1.43
+  engine behaves as 0.1.42 in the decode path: upstream's 0.1.43 speed work is gated to
+  gfx1200/gfx1201 and their own source says so (*"every other AMD part (gfx11, gfx906, ...) keeps its
+  earlier behaviour"*). Configurator, Help tab, **both** benchmark tabs (the older `strata-bench.py`
+  and the new community `strata_bench.py`) and per-card VRAM reserve in every current tag.
 - **rocBLAS solution table for gfx906** — the prompt path asks a table for the fastest rocBLAS kernel
   per GEMM shape instead of taking rocBLAS's own pick (PR #981's own measurement on gfx1030: up to 6×
   slower for some shapes). Measured on this box: **prefill +9.1%** (IQ3_XXS, split MI50+Radeon VII,
@@ -51,7 +55,7 @@ and redistribution are allowed (keep the copyright notice).
   **Pool** tab: `off` / `router` / `coordinator` / `worker`. Default role is `off`.
 
   ⚠ **Test phase.** The network pool ships **only in the `0.1.40.1-pool` tag** (a fork built on
-  engine 0.1.40); it is **not** in `0.1.42` / `latest`, whose engine has no `--pool-listen`. The link
+  engine 0.1.40); it is **not** in `0.1.43` / `latest`, whose engine has no `--pool-listen`. The link
   layer is proven GPU-less (`strata-pool-link-test`), but a full two-machine run is still ahead — treat it
   as experimental, not production. Note: the engine flag `--pool-tasks` is unrelated (it is the
   **CPU** expert pool for MoE, not the network).
@@ -68,14 +72,14 @@ The gfx906 gates (`src/core/vmm.cpp`, `src/core/mtp.cpp`, `src/kernels/cuda/fuse
 to be a **no-op** on gfx906 (the `intrinsics.hpp` path is not compiled there — the binary is
 byte-identical with and without it).
 
-### The rocBLAS solution table — the one patch this image still carries
+### The rocBLAS solution table — our engine patch
 
-That "no patches" above is about **building**. One **feature** still needs a patch, and 0.1.42 does
-**not** have it:
+That "no patches" above is about **building**. One **feature** still needs a patch, and no upstream
+release has it:
 
 - **PR #981** (Vop3p) **proposed** a reader for a per-shape rocBLAS **solution table** for the prompt's
   16-bit GEMMs (its own title scope: gfx103x, RDNA3). **That PR is closed and was never merged**, so
-  **none of this exists in the upstream engine** — no 0.1.42, no `main`. The code exists only as that
+  **none of this exists in the upstream engine** — no 0.1.43, no `main`. The code exists only as that
   PR's diff, and this image applies it as a patch. On top of that the reader is gated on
   `STRATA_ENABLE_HIP` — the **wave32 RDNA** backend — while this build sets `STRATA_HIP_GFX906`, so
   `cmake/hip_backend.cmake` never runs, `STRATA_ROCBLAS_AVAILABLE` never reaches `gemm.cu`, and even a
@@ -97,6 +101,20 @@ That "no patches" above is about **building**. One **feature** still needs a pat
   in the config** (`STRATA_ROCBLAS_TUNING`), so the artifact belongs with whoever owns the card, not in
   the engine. This image ships the one table for **this** card and no other.
 
+### The community benchmark's report header on AMD — our tools patch
+
+Upstream's community script (`tools/strata_bench.py`, new in 0.1.43) publishes `GPU driver: not read` and
+a generic `AMD Radeon Graphics` on AMD hardware, and both causes are in that script: the `gpu_driver`
+field picks `gpus[0]["driver"]`, which on the ROCm path is `None`, so the `rocm_driver` read a few lines
+above it is discarded; and the card name comes straight from `rocm-smi`, where the amdgpu driver carries
+no marketing name for the MI50 (`0x66a1`). This image applies `bench-patches/0001-gfx906-gpu-metadata.patch`
+on top of the upstream file — **report header only, nothing in the measurement path** — so a report made
+here reads `AMD Instinct MI50 32GB + AMD Radeon VII 16GB`, `GPU driver: 7.0.0-38-generic`, and names its
+results folder `2x-instinct-mi50-32gb-...` instead of `2x-unknown-...`. The one-line driver fix is
+proposed upstream as [#1974](https://github.com/Niko1221/Strata/pull/1974); if it lands, this patch goes
+away. The upstream file in this repo stays byte for byte theirs, so the patch is easy to audit and to
+drop.
+
 ### About the 0.1.40.1 naming
 
 Upstream's 0.1.40.1 hotfix does **not** bump the version in `CMakeLists.txt` — the engine still
@@ -107,17 +125,21 @@ the engine version.
 
 ## Tags
 
-- `0.1.42` / `latest` — **newest**: engine **v0.1.42** + the **rocBLAS solution table** (our gfx906
-  gate patch; **+9.1% prefill** measured) + the **table** and **tail-skip** toggles in the configurator
-  + the per-artifact expert profile + **Benchmark** and **Help** tabs + per-card VRAM reserve.
-  dp4a is in. **No network pool.**
+- `0.1.43` / `latest` — **newest**: engine **v0.1.43** + our **two** patches (the **rocBLAS solution
+  table** — our gfx906 gate patch, **+9.1% prefill** measured; and the community benchmark's **report
+  header on AMD**) + the **table** and **tail-skip** toggles in the configurator + the per-artifact
+  expert profile + **both** benchmark tabs (the old script **and** the new community suite) + **Help**
+  tab + per-card VRAM reserve. dp4a is in. **No network pool.** On gfx906 the engine's decode path is
+  unchanged from 0.1.42.
+- `0.1.42` — engine **v0.1.42**: the configurator, toggles and rocBLAS table as above, but **no**
+  community benchmark (it arrives in 0.1.43) and no report-header patch.
 - `0.1.41` — engine **v0.1.41**: same configurator, but **no** toggles and **no** rocBLAS table.
 - **Older tags:** `0.1.40.4` (v0.1.40.4 + Help tab), `0.1.40.1-pool` (v0.1.40 + the **network pool**,
   test phase — the only tag that carries it; `0.1.40.1` is the same image without it), `0.1.40`,
   `0.1.39`, and `0.1.38-setup` (v0.1.38 + the in-browser setup wizard). Older tags have no rocBLAS
   table and, except `0.1.40.1-pool`, **no network pool**.
 
-> ⚠ `latest` (engine **0.1.42**) has **no network pool**. If you want the pool, pull
+> ⚠ `latest` (engine **0.1.43**) has **no network pool**. If you want the pool, pull
 > `0.1.40.1-pool` explicitly.
 
 All tags include the configurator UI in **English** with an **EN/PL** toggle; the vision encoder is a
@@ -125,7 +147,7 @@ All tags include the configurator UI in **English** with an **EN/PL** toggle; th
 
 ## Two ways to get the model data
 
-### Option 1 — the built-in wizard (easiest, in `0.1.42` / `latest`, `0.1.41`, `0.1.40.1-pool` and `0.1.38-setup`)
+### Option 1 — the built-in wizard (easiest, in `0.1.43` / `latest`, `0.1.41`, `0.1.40.1-pool` and `0.1.38-setup`)
 
 No host steps, no scripts. Open **http://<host>:8090**, use section **0. Setup**: pick a family and a
 size (or **Custom HuggingFace repo…** and paste any `user/repo`), say whether you want images, click
@@ -255,7 +277,7 @@ Written by the configurator — you normally never edit it by hand. Key fields: 
 ## Where the model files come from
 
 This image ships **only** the engine (prebuilt gfx906 binary + ROCm 7.2.1), the configurator and — in
-`0.1.42`/`latest` and `0.1.38-setup` — the **data tools**. The model and the data it consumes are **not**
+`0.1.43`/`latest` and `0.1.38-setup` — the **data tools**. The model and the data it consumes are **not**
 in the image and are **not** taken from anyone's personal folder:
 
 - **Model GGUF and `mmproj/`** — HuggingFace, from the repo you pick (the list above / the wizard).
@@ -267,7 +289,7 @@ in the image and are **not** taken from anyone's personal folder:
 
 You produce those files **one of two ways**:
 
-- **Option 1 (easiest):** the built-in wizard in this image (`0.1.42`/`latest` or `0.1.38-setup`) does it — see above.
+- **Option 1 (easiest):** the built-in wizard in this image (`0.1.43`/`latest` or `0.1.38-setup`) does it — see above.
 - **Option 2:** run upstream Strata's own setup **on the host** (Linux `./setup.sh`, Windows `START-HERE.bat`,
   or `docs/AI_SETUP.md`), then mount the resulting `Strata-data`:
 
@@ -307,7 +329,7 @@ gfx906 the GPU vision path is not available, and CPU encoding is fast enough for
 ## Pool (several PCs, one model) — test phase
 
 > ⚠ **Experimental.** The network pool is **only in the `0.1.40.1-pool` tag** (fork on engine
-> 0.1.40). The `0.1.42` / `latest` engine has no `--pool-listen`. The link layer is proven GPU-less
+> 0.1.40). The `0.1.43` / `latest` engine has no `--pool-listen`. The link layer is proven GPU-less
 > (`strata-pool-link-test`), but a full run across two machines is still ahead. Not for production.
 
 The **Pool** tab splits the model across machines over TCP. Each PC runs a full engine with its own
@@ -402,10 +424,12 @@ above are **this box** (the ids are kept from the full record).
 
 ## Tags / engine
 
-- Engine **v0.1.42** (newest tag, `latest`) — gfx906 **build** fixes and dp4a (`v_dot4_i32_i8`) are
-  upstream; `--spec N` speculative decoding, MTP, `--kv int8`, Benchmark tab. **Plus our one patch:**
-  the rocBLAS solution table (**+9.1% prefill** — IQ3_XXS, split MI50+Radeon VII, ctx 65536, 225 W,
-  median of 3, 32k prompt) and the two configurator toggles (table, expert tail skip).
+- Engine **v0.1.43** (newest tag, `latest`) — gfx906 **build** fixes and dp4a (`v_dot4_i32_i8`) are
+  upstream; `--spec N` speculative decoding, MTP, `--kv int8`, both benchmark tabs (the old script and
+  the new community suite). **Plus our two patches:** the rocBLAS solution table (**+9.1% prefill** —
+  IQ3_XXS, split MI50+Radeon VII, ctx 65536, 225 W, median of 3, 32k prompt), which the two
+  configurator toggles (table, expert tail skip) control, and the community benchmark's report header
+  on AMD.
 - Engine **v0.1.41** — same engine **without** our table patch and without the toggles.
 - Engine **v0.1.40** + upstream **v0.1.40.1** server hotfixes and the **network pool** (`serve/pool.py`,
   `serve/route.py`, Pool tab) — layer split across PCs, `--pool-listen` / `--pool-peers` — **test phase** (`0.1.40.1-pool` only).
