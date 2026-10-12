@@ -137,6 +137,44 @@ with the arena going through the page cache; neither is proven at n=3.
 **Not measured here, and worth someone's evening:** the case low-RAM exists for — a model whose
 expert arena is *larger* than RAM, where the resident mode cannot run at all.
 
+## Run 3 — 0.1.43.1, the same `--mmap-experts` config (2026-10-12)
+
+The released engine is **0.1.43.1** now — a hotfix over 0.1.43, and [what it changes](image-history.md)
+is written up on the image-history page. The config here is the install's own, i.e. **arm B above on the
+next engine**: IQ3_XXS, ctx 131072, KV q4_0, prefill 2048, MTP spec 4, min-p 0.9,
+`--vram-reserve-mib 1024 --vram-reserve-later-mib 1024`, `--layer-split auto`, `--mmap-experts`.
+
+```
+short chat            decode 41.7 tok/s  (33.4-56.8)     first token 0.73 s (0.56-0.81)
+4K prompt, fresh      prompt 460.7 tok/s (404.2-470.6)   first token 8.76 s (8.57-9.98)
+16K prompt, fresh     prompt 544.9 tok/s (542.5-551.2)   first token 29.51 s (29.17-29.64)
+agent session         decode 43.4 tok/s  (26.5-58.3)     first token 4.81 s (4.52-4.94)
+1 concurrent client   31.9 tok/s total    latency p50 4.016 s / p95 4.252 s, 0 errors
+agent cache hit       71.0% (70.7-71.0)
+```
+
+### The difference — 0.1.43.1 against 0.1.43, both arm B
+
+```
+16K prompt tok/s     543.9  ->  544.9      +0.2%     tight ranges: 543.2-546.1 vs 542.5-551.2
+chat decode           41.2  ->   41.7      +1.2%     ranges overlap
+4K prompt tok/s      473.6  ->  460.7      -2.7%     both ranges wide (375-477 vs 404-471)
+agent decode          44.7  ->   43.4      -2.9%     ranges overlap (33.7-53.2 vs 26.5-58.3)
+1 client, total       32.5  ->   31.9      -1.8%
+agent cache hit      70.7%  ->  71.0%      same
+```
+
+The hotfix costs nothing measurable here: the one row with a tight range — 16K, the row the rocBLAS
+table acts on — is level to 0.2%, and every other difference sits inside its own range. Both runs carried
+the same two switches (table on: `STRATA_ROCBLAS_TUNING` + `STRATA_HIP_PROMPT_F16=1`; tail skip on:
+`STRATA_ROUTE_TAIL_SKIP=7`), and this run's engine log confirms both on both cards —
+`prefill gemm: rocBLAS tuning enabled (103 rows, 78 with a solution, gfx906, rocBLAS 5.2.0.dabb6df2b9)`
+twice, then `STRATA_ROUTE_TAIL_SKIP=7 is ON`.
+
+**Not measured, and the next run worth doing:** the table's own worth on 0.1.43.1 — this suite with the
+table toggle **off**. The +9.5% / +10.8% on the image-history page is a 16k/32k A/B at 80 W on
+0.1.42/0.1.43, not this suite and not this engine.
+
 ### A trap we are *not* in, and why it is worth knowing: `STRATA_ADAPT_OVERLAP`
 
 Upstream issue [#1964](https://github.com/Niko1221/Strata/issues/1964): on **Linux CUDA**, 0.1.43 turns

@@ -26,14 +26,17 @@ and redistribution are allowed (keep the copyright notice).
 
 ## What is in this image
 
-- **Engine v0.1.43** (newest tag, `latest`) — the gfx906 **build** fixes are upstream (commit
-  `a732a19`, verified on MI50 32 GB / gfx906 / ROCm-HIP) and dp4a (`v_dot4_i32_i8`) is in and works.
-  **This tag carries two patches of ours:** the **rocBLAS solution table** in the engine and the
-  community benchmark's **report header on AMD** in the tools — both below. On gfx906 the 0.1.43
-  engine behaves as 0.1.42 in the decode path: upstream's 0.1.43 speed work is gated to
-  gfx1200/gfx1201 and their own source says so (*"every other AMD part (gfx11, gfx906, ...) keeps its
-  earlier behaviour"*). Configurator, Help tab, **both** benchmark tabs (the older `strata-bench.py`
-  and the new community `strata_bench.py`) and per-card VRAM reserve in every current tag.
+- **Engine v0.1.43.1** (newest tag, `latest`) — a hotfix over 0.1.43;
+  [docs/image-history.md](docs/image-history.md) says what reaches gfx906 and what does not (the adaptive
+  overlap back to opt-in, long prompts on Windows and SATA SSDs, two-card batch serving, AMD multi-slot
+  memory faults, the server). The gfx906 **build** fixes are upstream (commit `a732a19`, verified on
+  MI50 32 GB / gfx906 / ROCm-HIP) and dp4a (`v_dot4_i32_i8`) is in and works. **This tag carries two
+  patches of ours and one configurator fix:** the **rocBLAS solution table** in the engine, the community
+  benchmark's **report header on AMD** in the tools, and a per-card **VRAM reserve floor** on a split —
+  all three below. On gfx906 the engine behaves as 0.1.42 in the decode path: upstream's 0.1.43 speed
+  work is gated to gfx1200/gfx1201 and their own source says so (*"every other AMD part (gfx11, gfx906,
+  ...) keeps its earlier behaviour"*). Configurator, Help tab, **both** benchmark tabs (the older
+  `strata-bench.py` and the new community `strata_bench.py`) and per-card VRAM reserve in every current tag.
 - **rocBLAS solution table for gfx906** — the prompt path asks a table for the fastest rocBLAS kernel
   per GEMM shape instead of taking rocBLAS's own pick (PR #981's own measurement on gfx1030: up to 6×
   slower for some shapes). Measured on this box: **prefill +9.1%** (IQ3_XXS, split MI50+Radeon VII,
@@ -57,7 +60,7 @@ and redistribution are allowed (keep the copyright notice).
   **Pool** tab: `off` / `router` / `coordinator` / `worker`. Default role is `off`.
 
   ⚠ **Test phase.** The network pool ships **only in the `0.1.40.1-pool` tag** (a fork built on
-  engine 0.1.40); it is **not** in `0.1.43` / `latest`, whose engine has no `--pool-listen`. The link
+  engine 0.1.40); it is **not** in `0.1.43.1` / `latest`, whose engine has no `--pool-listen`. The link
   layer is proven GPU-less (`strata-pool-link-test`), but a full two-machine run is still ahead — treat it
   as experimental, not production. Note: the engine flag `--pool-tasks` is unrelated (it is the
   **CPU** expert pool for MoE, not the network).
@@ -426,22 +429,33 @@ above are **this box** (the ids are kept from the full record).
 
 ## Tags / engine
 
-- Engine **v0.1.43** (newest tag, `latest`) — gfx906 **build** fixes and dp4a (`v_dot4_i32_i8`) are
-  upstream; `--spec N` speculative decoding, MTP, `--kv int8`, both benchmark tabs (the old script and
-  the new community suite). **Plus our two patches:** the rocBLAS solution table (**+9.1% prefill** —
-  IQ3_XXS, split MI50+Radeon VII, ctx 65536, 225 W, median of 3, 32k prompt), which the two
-  configurator toggles (table, expert tail skip) control, and the community benchmark's report header
-  on AMD.
+- Engine **v0.1.43.1** (newest tag, `latest`) — a hotfix over 0.1.43 (the adaptive overlap back to
+  opt-in, long prompts on Windows and SATA SSDs, two-card batch serving, AMD multi-slot memory faults,
+  the server); [docs/image-history.md](docs/image-history.md) says what reaches gfx906 and what does
+  not. gfx906 **build** fixes and dp4a (`v_dot4_i32_i8`) are upstream; `--spec N` speculative decoding,
+  MTP, `--kv int8`, both benchmark tabs (the old script and the new community suite). **Plus our two
+  patches and one configurator fix:** the rocBLAS solution table (**+9.1% prefill** — IQ3_XXS, split
+  MI50+Radeon VII, ctx 65536, 225 W, median of 3, 32k prompt), which the two configurator toggles
+  (table, expert tail skip) control, the community benchmark's report header on AMD, and the per-card
+  VRAM reserve floor below.
 - Engine **v0.1.41** — same engine **without** our table patch and without the toggles.
 - Engine **v0.1.40** + upstream **v0.1.40.1** server hotfixes and the **network pool** (`serve/pool.py`,
   `serve/route.py`, Pool tab) — layer split across PCs, `--pool-listen` / `--pool-peers` — **test phase** (`0.1.40.1-pool` only).
 - Measured on MI50 32 GB (this image, IQ2_XS split MI50+Radeon VII, 11552-token prompt):
   **~498 tok/s prefill, ~40 tok/s decode**. dp4a adds **+12..17% decode** over the portable loop (A/B).
-- **VRAM reserve is per card.** The configurator detects which card drives the display
-  (`/sys/class/drm/*/status == connected`) and keeps the reserve there — that card keeps
-  `--vram-reserve-mib` free (so the desktop and image rendering stay alive); cards with no monitor are
-  filled to the edge (`--vram-reserve-later-mib 0` for a split). Helper cards have no reserve flag, so
-  when the helper drives the display the configurator computes an explicit slot count instead of `auto`.
+- **VRAM reserve is per card, and never zero on a split.** The configurator detects which card drives
+  the display (`/sys/class/drm/*/status == connected`) and keeps the reserve there — that card keeps
+  `--vram-reserve-mib` free (so the desktop and image rendering stay alive); a later card with no monitor
+  keeps a **512 MiB floor** (`LATER_FLOOR_MIB`), not zero. **Every later card of a layer split needs its
+  own headroom.** The engine sizes a stage's cache to `free - 96 MiB`, and each stage then allocates its
+  own verification arena (69 MiB at `--spec 3`) plus serve-time buffers (the `rocBLAS` tune workspace,
+  the staged `hc` buffers) on top of it: with the `0` this image used to write there, a 3-4 card headless
+  box ended at `layer split, stage 2: verify: the device arena (69 MiB) does not fit`
+  ([issue #1](https://github.com/xxDoman/strata-gfx906/issues/1)) — cost of the floor on IQ3_S is ~530
+  cache slots per card (~97% → ~95% resident). Images built before 0.1.43.1 wrote `0` there; the
+  workaround on those is `--vram-reserve-later-mib 1024`, or dropping the flag so the engine falls back
+  to `--vram-reserve-mib`. Helper cards have no reserve flag, so when the helper drives the display the
+  configurator computes an explicit slot count instead of `auto`.
 
 ---
 

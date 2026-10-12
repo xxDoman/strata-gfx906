@@ -9,7 +9,8 @@ bare tok/s ranking would be a lie. Two caveats before any comparison:
   256-token outputs); `new` means the 0.1.43 community suite (chat, fresh 4K and 16K, agent session).
   Only the prompt rows at ~4K are close to comparable across the two.
 - **Engine.** Anything on Linux CUDA 0.1.43 may carry the `STRATA_ADAPT_OVERLAP` regression
-  ([#1964](https://github.com/Niko1221/Strata/issues/1964)) unless the entry says otherwise.
+  ([#1964](https://github.com/Niko1221/Strata/issues/1964)) unless the entry says otherwise; upstream made
+  that overlap opt-in again in 0.1.43.1 ([#2010](https://github.com/Niko1221/Strata/issues/2010)).
 
 Our two rows are marked *(ours)* — they live in [PR #1978](https://github.com/Niko1221/Strata/pull/1978)
 and are not merged upstream yet. Everything else is copied from the entries, numbers verbatim.
@@ -18,6 +19,7 @@ and are not merged upstream yet. Everything else is copied from the entries, num
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-11 | **2x gfx906: MI50 32 GB + Radeon VII 16 GB — ours** | 48 GB | 0.1.43 | IQ1_M coder | 131,072 | new | chat decode **49.4** (n=3); 4K prompt **604.2**; 16K prompt **756.5**; agent decode 49.5; first token 0.60 / 6.68 / 21.26 s | [PR #1978](https://github.com/Niko1221/Strata/pull/1978) |
 | 2026-10-11 | **same box — ours** | 48 GB | 0.1.43 | IQ3_XXS | 131,072 | new | chat decode **44.0** resident / 41.2 with `--mmap-experts`; 4K prompt 546.9 / 473.6; 16K 621.8 / 543.9 | [PR #1978](https://github.com/Niko1221/Strata/pull/1978) |
+| 2026-10-12 | **same box — ours, next engine** | 48 GB | 0.1.43.1 | IQ3_XXS | 131,072 | new | same config (`--mmap-experts`): chat decode 41.7; 4K prompt 460.7; 16K prompt **544.9**; agent decode 43.4 — level with the row above (16K within 0.2%), hotfix measured as free | [run 3](community-benchmark.md) |
 | 2026-09-30 | RTX 5090, Core Ultra 9 285K, 64 GB RAM | — | 0.1.29 | IQ2_XS | — | old | Median decode throughput was **179.4 tok/s at 4,096 prompt tokens, 175.7 tok/s at 32,768, and 165.0 tok/s at 128,000**. These are synthetic code-expla | [2026-09-30-community-rtx-5090](../bench/results/2026-09-30-community-rtx-5090/README.md) |
 | 2026-10-03 | 2x AMD Instinct MI50 16 GB (gfx906), Xeon E5-2666 v3, 32 G | 16 GB | 0.1.38 | IQ1_M | — | old | The median decode throughput was **50.1 tok/s at 4,096 prompt tokens, 47.8 tok/s at 32,768 and 45.7 tok/s at 128,000**. Prompts were read at 321, 523  | [2026-10-03-community-2x-mi50](../bench/results/2026-10-03-community-2x-mi50/README.md) |
 | 2026-10-04 | 2x Intel Arc Pro B60 24 GB, Ryzen 5 5600, 64 GB RAM | 24 GB | — | IQ1_M | — | old | by-hand `--tokens` run, 11-token prompt, 128 greedy tokens: **11.9 tok/s** (11.2 to 11.9 over five builds that differ only in experiments), coherent P | [2026-10-04-community-2x-arc-pro-b6](../bench/results/2026-10-04-community-2x-arc-pro-b60/README.md) |
@@ -46,7 +48,7 @@ The two rankings of these same numbers — as bar charts — are on [rankings](r
 - **Prompt is where this box is strong**: 547-756 tok/s against 284-523 tok/s on the other gfx906
   entries — the same family, older 16 GB cards, engines 0.1.38 and 0.1.40.4. Our two image levers
   (the rocBLAS solution table + the FP16 prompt path it needs) act on exactly this axis; ours is
-  v0.1.43 with both on, and the rocBLAS table alone measured +9.5% / +10.8% prompt on IQ3 in an A/B
+  v0.1.43.1 with both on, and the rocBLAS table alone measured +9.5% / +10.8% prompt on IQ3 in an A/B
   on this box ([measurements](measurements.md)).
 - **48 GB of gfx906 is unique here.** Every other entry is one card or two cards of 8-32 GB; the
   other gfx906 rows are 16 GB. Ours also carries the largest quantisations in the list
