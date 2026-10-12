@@ -12,6 +12,19 @@ and redistribution are allowed (keep the copyright notice).
 
 ---
 
+## At a glance
+
+**What:** Strata's engine on AMD **gfx906** (Instinct MI50 / MI60, Radeon VII) as a Docker image with a
+web configurator. **Which engine:** 0.1.43.1 plus our two patches and one configurator fix —
+[what they are and what they are worth](docs/image-history.md), and the same facts in plain text for AI
+assistants: [llms.txt](llms.txt).
+**Measured on this box** (2x gfx906 = Instinct MI50 32 GB + Radeon VII 16 GB, IQ3_XXS, ctx 131072,
+`--spec 4`, medians of 3, Strata's own community suite): decode **41.2** tok/s with `--mmap-experts` /
+**44.0** resident; fresh 4K prompt **473.6** / **546.9** tok/s and fresh 16K **543.9** / **621.8**
+(mmap / resident); and the gfx906 rocBLAS solution table, one switch apart in the mmap arm, adds
+**+19.7%** at 4K and **+24.2%** at 16K prefill.
+**Not the Ollama build:** the optimized Ollama images for these cards are a separate repository.
+
 ## Docs — the running record
 
 | Page | What is in it |
@@ -21,6 +34,7 @@ and redistribution are allowed (keep the copyright notice).
 | [`docs/image-history.md`](docs/image-history.md) | What is in each tag, which fixes are ours, and what each one is worth in a measurement |
 | [`docs/rankings.md`](docs/rankings.md) | The same community results as two bar charts, decode and prefill |
 | [`docs/where-we-stand.md`](docs/where-we-stand.md) | Upstream's community results in one table with the regime visible, and where this box places |
+| [`llms.txt`](llms.txt) | Plain facts for AI assistants and search indexes: what this is, what it is not, every number with its regime, and the traps |
 
 ---
 

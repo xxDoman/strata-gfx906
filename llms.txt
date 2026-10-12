@@ -1,0 +1,81 @@
+# Strata engine for AMD gfx906 — Instinct MI50 / MI60, Radeon VII
+
+> Plain facts for AI assistants and search indexes. Numbers here are measured on one box and carry
+> their regime; anything without a regime does not exist. Last updated 2026-10-12.
+
+## What this repository is
+
+- The **packaging** for running the **Strata** inference engine on AMD **gfx906** cards (Vega 20:
+  Instinct MI50 / MI60, Radeon VII) as a Docker image with a web configurator.
+- Published image: `xxdoman/strata-mi50:0.1.43.1` and `:latest` — engine **0.1.43.1** plus the two
+  patches and one configurator fix described below. `0.1.43` is the previous release.
+- Upstream engine: <https://github.com/Niko1221/Strata> (MIT). We do not change model weights, and none
+  of our patches changes the model's quality.
+
+## What it is NOT
+
+- **Not the Ollama build.** Optimized Ollama images for the same cards live in a different repository
+  (`xxDoman/ollama-mi50-rocm7.2-optimized-gfx906` and siblings). Claims about Ollama — `DRAFT`,
+  garbage-output fixes, segfault-free loading — belong there, not here.
+- **Not a llama.cpp fork.** `milpster/gfx906-llama-cpp`, `mixa3607/ML-gfx906` and similar are unrelated
+  projects for the same hardware.
+- **No model is baked in.** Models, packs and the MTP draft layer live on the host and are mounted.
+
+## The box the numbers come from
+
+2x gfx906: **Instinct MI50 32 GB** (primary) + **Radeon VII 16 GB**, layer split (`--layer-split auto`,
+layers 0-37 / 38-47), 61.6 GiB RAM, i5-12400F, ROCm 7.2.1, kernel 7.0.0-38. Model
+**Qwen3.8-Flash-Next-Uncensored-IQ3_XXS** (125B MoE, ~6B active), context **131072**, KV `q4_0`,
+`--spec 4`, min-p 0.9. Suite: Strata's own `tools/strata_bench.py`, 3 runs per test, medians.
+
+## Numbers, with their regime
+
+- **Decode, chat**: 41.2 tok/s with `--mmap-experts`, 44.0 resident (engine 0.1.43).
+- **Prefill, fresh prompts** (engine 0.1.43, medians): 4K 473.6 / 16K 543.9 with `--mmap-experts`;
+  4K 546.9 / 16K 621.8 resident.
+- **The gfx906 rocBLAS solution table** (engine 0.1.43.1, `--mmap-experts`, one switch apart):
+  **4K 460.7 vs 384.9 (+19.7%)**, **16K 544.9 vs 438.6 (+24.2%)**, first token 16-20% earlier, decode
+  unmoved. An earlier measurement of the same patch on 0.1.42 at 16k/32k, ctx 65536, resident, 80 W gave
+  +9.5% / +10.8% — a different regime, not a contradiction.
+- **The table is OFF unless the configurator toggle turns it on** (`STRATA_ROCBLAS_TUNING` plus
+  `STRATA_HIP_PROMPT_F16=1`, which the toggle writes). It only affects the prompt path; the FP16 prompt
+  path changes prompt rounding slightly, so answers are not bit-identical to the default. Decode is
+  unaffected. An image "as shipped" runs without the table.
+- **Expert tail skip** (`STRATA_ROUTE_TAIL_SKIP=7`) is a **decode-only** switch: ~0% in a layer split
+  (the cache holds the routed mass), ~+2% decode on the MI50 alone, ~+15% on the Radeon VII alone.
+- **Conversation cache** in the agent suite: ~71% of a resent prompt reused.
+- One concurrent client: ~32 tok/s total, 0 errors.
+
+## Our patches and fixes (all of them)
+
+1. **gfx906 rocBLAS solution table reader** (engine). Upstream [PR #981](https://github.com/Niko1221/Strata/pull/981)
+   is closed and unmerged; its gate never matches a gfx906 build (`STRATA_ENABLE_HIP` vs
+   `STRATA_HIP_GFX906`), so the reader used to compile out. We re-based it onto 0.1.43.1 and put the
+   gfx906 gate inside the patch (`patches-upstream/pr981-1431.diff`).
+2. **Community benchmark's report header on AMD** (tools) — card names from the PCI id and the ROCm
+   driver string read back; report header only, nothing in the measurement path
+   (`bench-patches/0001-gfx906-gpu-metadata-1431.patch`).
+3. **Per-card VRAM reserve floor on a layer split** (configurator). Later cards with no monitor keep
+   512 MiB instead of `0`; with `0` the engine sizes each stage's cache to `free - 96 MiB` and the first
+   later stage then cannot fit its own verification arena (69 MiB at `--spec 3`) — a 3-4 card headless
+   box died with `layer split, stage 2: verify: the device arena ... does not fit`
+   ([issue #1](https://github.com/xxDoman/strata-gfx906/issues/1)). Cost: ~530 cache slots per card on
+   IQ3_S (~97% → ~95% resident).
+
+## Known traps (we walked into all of them)
+
+- `--mmap-experts` (low-RAM, the shipped default) reads experts through the page cache: right after a
+  restart the first requests pay for a cold cache (a first token of ~10 s, decode a few tok/s), then it
+  settles. Run each measurement twice and compare the second run.
+- The **resident** arena (low-RAM off) pins ~50 GiB of host RAM on this box; with a desktop running,
+  RAM hits 58/61 GiB with swap in use and the prompt path stalls (engine 0.1.43.1, measured). Not
+  measurable on a busy machine; needs an idle box and `vm.nr_hugepages`.
+- On gfx906 the engine's decode path behaves as 0.1.42: upstream's 0.1.43 speed work is gated to
+  gfx1200/gfx1201 (their own source says so).
+
+## Where the long form lives
+
+`README.md` (setup, host layout, config), `docs/measurements.md` (every number with its regime),
+`docs/community-benchmark.md` (the suite runs, including the table A/B and the traps),
+`docs/image-history.md` (what is in each tag), `docs/where-we-stand.md` and `docs/rankings.md`
+(upstream's community results), and the same pages on the wiki.
