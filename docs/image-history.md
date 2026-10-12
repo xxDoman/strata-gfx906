@@ -135,9 +135,10 @@ agent session, decode  44.7  ->   43.4 tok/s     ranges overlap (33.7-53.2 vs 26
 ```
 
 Read it as: **the hotfix cost us nothing**; the number that carries the table (16K) is level to within
-its own range. The table's *own* worth on 0.1.43.1 — a toggle-on/off A/B on this engine — is
-**not measured yet**; the +9.5% / +10.8% above is the 0.1.42/0.1.43 measurement and is not claimed for
-0.1.43.1.
+its own range. The table's *own* worth on 0.1.43.1 — a toggle-on/off A/B on this engine — came a few hours
+later: **+19.7% at 4K and +24.2% at 16K prompt, first token 16-20% earlier, decode unmoved**, in the
+`--mmap-experts` arm ([run 4](community-benchmark.md)). The +9.5% / +10.8% above is a different regime
+(16k/32k, resident arena, ctx 65536, 0.1.42) and is not what 0.1.43.1 measures.
 
 ## Two ways to check a tag before trusting a note
 

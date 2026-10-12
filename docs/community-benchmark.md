@@ -175,6 +175,46 @@ twice, then `STRATA_ROUTE_TAIL_SKIP=7 is ON`.
 table toggle **off**. The +9.5% / +10.8% on the image-history page is a 16k/32k A/B at 80 W on
 0.1.42/0.1.43, not this suite and not this engine.
 
+## Run 4 — the table's own worth on 0.1.43.1 (2026-10-12)
+
+Same engine, same config, same suite, **one switch apart**: the rocBLAS table (`STRATA_ROCBLAS_TUNING`
+plus the FP16 prompt path it needs) on against off. Both arms with `--mmap-experts`, ctx 131072, KV q4_0,
+prefill 2048, MTP spec 4, min-p 0.9, `--layer-split auto`. The off arm is the engine restarted with the
+toggle cleared (the launcher writes both keys explicitly), so the two arms are two engine sessions.
+
+```
+                     table ON             table OFF            delta
+4K prompt, fresh     460.7 (404.2-470.6)   384.9 (374.3-389.0)  +19.7%
+16K prompt, fresh    544.9 (542.5-551.2)   438.6 (437.5-438.7)  +24.2%
+first token, 4K       8.76 s               10.48 s             -16.4%
+first token, 16K     29.51 s               36.66 s             -19.5%
+chat decode           41.7 (33.4-56.8)      40.7 (3.8-56.5)      level
+agent session decode  43.4 (26.5-58.3)      50.7 (39.4-58.1)     ranges overlap
+1 client, total       31.9 tok/s           32.0 tok/s           level
+```
+
+The table is a **prompt-path** lever and here a large one: +20% at 4K, +24% at 16K, first token 16-20%
+earlier, while decode does not move (the agent row's 50.7 sits inside 39.4-58.1 and its 43.4 inside
+26.5-58.3 — overlapping, not a result). Bigger than the +9.5% / +10.8% on the image-history page, and the
+two do not conflict: that one was 16k/32k with a **resident** arena, ctx 65536, on 0.1.42; this one is
+`--mmap-experts`, ctx 131072, on 0.1.43.1.
+
+**The confound, stated.** The two arms are two engine sessions and the off arm had just restarted, so it
+also paid for a cold page cache in its first requests — visible in exactly one place, the short-chat row
+(`decode 3.8-56.5`, first token up to 10.6 s, against 33.4-56.8 and 0.55-0.81 s on the warm engine). The 4K
+and 16K rows come after nine chat requests and their ranges are tight (16K: 437.5-438.7 against
+542.5-551.2), which is why the prompt numbers are read as the table and not as cold cache. Repeating this:
+run **each arm twice** and compare the second run of each.
+
+**The resident arm is not measurable on this box while a desktop runs.** Tried on 0.1.43.1 with no
+`--mmap-experts`: ~50 GiB of host arena pinned (`cudaHostRegister PORTABLE ok`, `MAP_HUGETLB` unavailable,
+THP on 4k pages) on a 61.6 GiB machine, RAM went to 58/61 with 7 GiB in swap, the PCIe H2D probe fell from
+5.5 to 3.6 GB/s, and the prompt path stalled in ten-second steps with the GPU at 24 W. The suite still
+finished, but two of its three 16K runs and one 4K run carry that stall (16K: 127.3 / 545.3 / 617.5 tok/s).
+The uncontaminated runs land where 0.1.43's resident arm landed — 4K 548.4 against 546.9 recorded, 16K
+617.5 against 621.8 — which is the one thing that run says. For a real resident measurement: an idle box,
+and `vm.nr_hugepages` sized to the arena.
+
 ### A trap we are *not* in, and why it is worth knowing: `STRATA_ADAPT_OVERLAP`
 
 Upstream issue [#1964](https://github.com/Niko1221/Strata/issues/1964): on **Linux CUDA**, 0.1.43 turns
