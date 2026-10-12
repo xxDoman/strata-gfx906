@@ -1,7 +1,7 @@
 # Strata 0.1.43.1 + TABLICA rocBLAS gfx906 + floor rezerwy VRAM w launcherze — obraz PRODUKCYJNY.
 # (AMD Instinct MI50 / MI60, Radeon VII — gfx906)
 #
-# Co innego niz xxdoman/strata-mi50:0.1.43-test:
+# Co nowego wzgledem wydania 0.1.43:
 #   1. Silnik: bin/strata-gfx906-0.1.43.1-roc981 = tag v0.1.43.1 + CZYTNIK tablicy rocBLAS z PR #981.
 #      Patch = patches-upstream/pr981-1431.diff (przeniesiony na 0.1.43.1, git apply --check czysto).
 #      Poprzedni plik pr981-clean.diff NIE byl tym, czym zbudowano 0.1.43 (hunk Gemm::f16_inplace i dwa
