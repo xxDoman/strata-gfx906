@@ -75,7 +75,11 @@ layers 0-37 / 38-47), 61.6 GiB RAM, i5-12400F, ROCm 7.2.1, kernel 7.0.0-38. Mode
 
 ## Where the long form lives
 
-`README.md` (setup, host layout, config), `docs/measurements.md` (every number with its regime),
+`README.md` (the short card: what this is, the released engine with its sums, quick start, links),
+`docs/engines/` — one page per engine, each with the same fixed header (tag, image sum, engine binary
+sum, what it fixes, how that was proven, what is not proven): `0.1.43.1` (released) and the local
+`0.1.44.1.b` … `.1.g` line; the index is https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/README.md —
+`docs/operations.md` (setup, host layout, config, configurator, vision, pool, traps), `docs/benchmarks.md` (the measured tables), `docs/measurements.md` (every number with its regime),
 `docs/community-benchmark.md` (the suite runs, including the table A/B and the traps),
 `docs/image-history.md` (what is in each tag), `docs/where-we-stand.md` and `docs/rankings.md`
-(upstream's community results), and the same pages on the wiki.
+(upstream's community results), and the same pages on the wiki (https://github.com/xxDoman/strata-gfx906/wiki/Engines).
