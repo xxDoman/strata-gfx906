@@ -20,7 +20,39 @@ assistants, with the traps: [llms.txt](https://github.com/xxDoman/strata-gfx906/
 
 ---
 
-## The released engine: 0.1.44.1 (`latest`)
+## The released engine: 0.1.45 (`latest`)
+
+| | |
+| --- | --- |
+| Image tag | `xxdoman/strata-mi50:0.1.45`, alias `:latest` (7.60 GB) |
+| Manifest digest | `sha256:1314986027105b29b562a4b2a5a70deac73b000948e31e70d59263f9c7ce4daa` |
+| Engine binary sum | `sha256 14a4a00e436a53041bd1fda7634a36be26ed07911692d5b2e3a119ef907c2797` (34 119 064 B) |
+| Engine reports | `engine=0.1.45` |
+| Published tags | `0.1.45` and `latest` — one image, one digest (published 2026-10-18) |
+
+**What it is.** Upstream tag **v0.1.45** — Qwen3.6-35B-A3B reads pictures, `--parallel` up to 8 slots, new
+decode kernels, a bigger default prompt chunk (4096/2048/1024 by free VRAM) — plus **7 of our gfx906/q36
+patches, E1–E7**: attention buffers sized from the model's geometry, `ident`/`rinv` slack, Q4_K/Q6_K accepted
+by `upload_f32`, Q4_K down experts, the NVFP4 W4A4 unit gated out, the cuBLAS name shims, an `f16kq` stub and
+`nextn_predict_layers` treated as optional. The server and tokenizer come from v0.1.45; the configurator is the
+0.1.44.1 line. The engine is a **portable build** (`STRATA_PORTABLE=ON`), so it does not trap an older CPU.
+
+**What it is worth here** (80 W cap on the MI50, medians of 3, `--tg 128`): Ornith-1.5-35B-A3B Q4_K_M on the
+`q36` path **697 / 637 / 580** tok/s prefill and **54.7 / 54.5 / 54.0** decode at 2K / 8K / 16K; Qwen3.6-35B-A3B
+Q6_K **574 / 552 / 507** and **53.2 / 53.9 / 53.1**; Qwen3.8-Flash-Next IQ2_XXS on the pack path (both cards,
+low-RAM off, kv q4_0) **356 / 447 / 465** and **38.7 / 35.9 / 35.9**. Against 0.1.44.1 on the same config the
+`q36` path is **+15 % decode** at **−8…−10 % prefill**; the pack path is unchanged. Those are time measurements
+only — no token-for-token check was made.
+
+**What it does not have.** The int8 KV cache on the `q36` path (that was the 0.1.44.1 line) and the `--parallel`
+/ image switches in the configurator (engine and server have them; the form does not expose them).
+
+**Full page:** [docs/engines/0.1.45.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.45.md)
+· [wiki](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.45)
+
+---
+
+## The previous release: 0.1.44.1
 
 | | |
 | --- | --- |
@@ -128,7 +160,8 @@ Every link below is absolute on purpose: relative paths do not work on the Docke
 | Page | In this repository | On the wiki |
 | --- | --- | --- |
 | Engine index — all tags, sums, status | [docs/engines](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/README.md) | [Engines](https://github.com/xxDoman/strata-gfx906/wiki/Engines) |
-| Engine 0.1.44.1 — the released one | [docs/engines/0.1.44.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.44.1.md) | [Engine-0.1.44.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.44.1) |
+| Engine 0.1.45 — the released one | [docs/engines/0.1.45.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.45.md) | [Engine-0.1.45](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.45) |
+| Engine 0.1.44.1 — previous | [docs/engines/0.1.44.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.44.1.md) | [Engine-0.1.44.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.44.1) |
 | Engine 0.1.43.1 — previous release, still pullable | [docs/engines/0.1.43.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md) | [Engine-0.1.43.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.43.1) |
 | Image history — what is in each tag, which fixes are ours | [docs/image-history.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/image-history.md) | [image-history](https://github.com/xxDoman/strata-gfx906/wiki/image-history) |
 | Measurements — every number with its regime | [docs/measurements.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/measurements.md) | [measurements](https://github.com/xxDoman/strata-gfx906/wiki/measurements) |

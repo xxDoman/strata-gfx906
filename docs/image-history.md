@@ -7,7 +7,7 @@ worth in a measurement. Upstream's own engine changelog lives in their repositor
 ## Tags we built
 
 ```
-0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
+0.1.45           0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
   0.1.39-v3        0.1.40.4         0.1.41.v2         0.1.42-roc981     0.1.43-roc981     0.1.43.1-roc981
   0.1.39-854       0.1.40-i1187     0.1.41-roc981
                    0.1.40-pool
@@ -146,3 +146,23 @@ later: **+19.7% at 4K and +24.2% at 16K prompt, first token 16-20% earlier, deco
 docker images --digests | grep strata-mi50          # tag vs digest
 curl -s https://hub.docker.com/v2/repositories/xxdoman/strata-mi50/tags   # what is on the Hub
 ```
+
+## 0.1.45 (published 2026-10-18) — the current release
+
+Upstream **v0.1.45** plus our **E1–E7**. Two patches of the 0.1.44.1 line were absorbed upstream and are not
+re-applied: the geometry guard for an all-zero `compress_ratios` (#2396) and the rocBLAS table reader itself
+(our PR #981 — the reader is in the release, but its CMake detection still had to be wired for gfx906 by hand,
+which is E5). New in the release: Qwen3.6 reading images, `--parallel` up to 8 slots, new decode kernels, and a
+bigger default prompt chunk — which is exactly what makes **E1** mandatory rather than optional: the fixed
+512-token attention budget is 4× too small at the new 4096-row chunk.
+
+| | |
+|---|---|
+| Engine | `14a4a00e436a5304…` (34 119 064 B), `engine=0.1.45` |
+| Image | `sha256:1314986027105b29b5…` (7.60 GB), tags `0.1.45` + `latest` |
+| Build | container, `-DSTRATA_PORTABLE=ON -DSTRATA_Q6K_EXPERTS=ON -DSTRATA_MMQ_KQUANTS=ON`, `BUILD=0` |
+| Measured (80 W, MI50, medians of 3) | Ornith Q4_K_M `q36` 697/637/580 PP, 54.7/54.5/54.0 TG · Qwen3.6 Q6_K `q36` 574/552/507 PP, 53.2/53.9/53.1 TG · IQ2_XXS pack 356/447/465 PP, 38.7/35.9/35.9 TG |
+| Against 0.1.44.1 | `q36`: +15 % decode, −8…−10 % prefill · pack: no difference (0.6 %) |
+| Not in it | the `q36` int8 KV cache (0.1.44.1 line) and `--parallel` / image switches in the configurator |
+
+Full page: [docs/engines/0.1.45.md](engines/0.1.45.md).
