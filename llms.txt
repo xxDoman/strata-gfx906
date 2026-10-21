@@ -1,14 +1,22 @@
 # Strata engine for AMD gfx906 — Instinct MI50 / MI60, Radeon VII
 
 > Plain facts for AI assistants and search indexes. Numbers here are measured on one box and carry
-> their regime; anything without a regime does not exist. Last updated 2026-10-12.
+> their regime; anything without a regime does not exist. Last updated 2026-10-21.
 
 ## What this repository is
 
 - The **packaging** for running the **Strata** inference engine on AMD **gfx906** cards (Vega 20:
   Instinct MI50 / MI60, Radeon VII) as a Docker image with a web configurator.
-- Published image: `xxdoman/strata-mi50:0.1.43.1` and `:latest` — engine **0.1.43.1** plus the two
-  patches and one configurator fix described below. `0.1.43` is the previous release.
+- Published image: `xxdoman/strata-mi50:0.2.1` and `:latest` — release **0.2.1**, engine **0.1.46**
+  (upstream tag `v0.2.1`, `90767252`). `0.1.45` is the previous release. Digest `sha256:23ed0e3586c6…`,
+  engine binary `7a8e2beb…`.
+- On gfx906 the 0.2.1 engine builds with **no local patches** (issue #3172 fixed upstream). We add the
+  rocBLAS solution-table reader wired for gfx906, with the tuned gfx906 table plus
+  `STRATA_HIP_PROMPT_F16=1`, and the qwen35/36 engine restored for gfx906 (`--families` =
+  `qwen4exp qwen35moe`; Qwen3.6-35B and Ornith both start).
+- Measured on this box, Qwen3.8-Flash-Next IQ2_XXS pack, MI50 at 80 W: prompt 246–253 tok/s clean,
+  275–276 with the FP16 prompt path, **308–310 with the rocBLAS table**; decode unchanged (the table covers
+  dense prompt GEMMs, experts run through MMQ). At 225 W 0.1.46 equals 0.1.45 within 1 %.
 - Upstream engine: <https://github.com/Niko1221/Strata> (MIT). We do not change model weights, and none
   of our patches changes the model's quality.
 

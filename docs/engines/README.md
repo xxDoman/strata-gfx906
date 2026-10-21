@@ -7,7 +7,7 @@ links to.
 
 Two things to keep separate before you quote any tag:
 
-- **`0.1.43.1` / `latest`** is the **published** image. It is what `docker pull` gives you, and it is the
+- **`0.2.1` / `latest`** is the **published** image. It is what `docker pull` gives you, and it is the
   only engine here that a reader can reproduce.
 - The **`0.1.44.1.b` … `.1.g`** line is built and smoke-tested **locally** (same engine binary, different
   configurator). None of those tags was pushed, so no registry digest exists for them and nobody outside
@@ -16,6 +16,7 @@ Two things to keep separate before you quote any tag:
 
 | Image tag | Image sum (short) | Engine binary | What it fixes | On Docker Hub |
 | --- | --- | --- | --- | --- |
+| [`0.2.1`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.1.md) · `latest` | `23ed0e3586c6` (`sha256:23ed0e3586c6ebb727fda…`) | `7a8e2beb…` (38 443 528 B) | clean v0.2.1 for gfx906; rocBLAS table wired + gfx906 table + FP16 prompt path; qwen35/36 restored | **yes** (2026-10-21) |
 | [`0.1.43.1`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md) · `latest` | `6e9002179e55` (`sha256:6e9002179e55…`) | `c78456f3…` | upstream 0.1.43.1 hotfix + our rocBLAS table reader, AMD report header, per-card VRAM reserve floor | **yes** |
 | [`0.1.44.1.b`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.44.1.b.md) | `323ae9493819` | `9859791a…` | `Models Infos` panel, metadata repair on header copies, Start blocked for models that cannot load | no — local |
 | [`0.1.44.1.c`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.44.1.c.md) | `d16941ac6456` | `9859791a…` | pack build as a button (API + atomic `.tmp`→rename), model list out of the Configuration tab | no — local |

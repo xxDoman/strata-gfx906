@@ -7,11 +7,16 @@ worth in a measurement. Upstream's own engine changelog lives in their repositor
 ## Tags we built
 
 ```
-0.1.45           0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
+0.2.1            0.1.45           0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
   0.1.39-v3        0.1.40.4         0.1.41.v2         0.1.42-roc981     0.1.43-roc981     0.1.43.1-roc981
   0.1.39-854       0.1.40-i1187     0.1.41-roc981
                    0.1.40-pool
 ```
+
+**0.2.1** (2026-10-21, engine **0.1.46**) is the released image: upstream v0.2.1 builds for gfx906 with no
+local patches (issue #3172 fixed upstream), and we add the rocBLAS table reader wired for gfx906 with the
+tuned gfx906 table plus `STRATA_HIP_PROMPT_F16=1`, the qwen35/36 engine restored for gfx906, and the 0.2.1
+server/tools/`strata_control`. Digest `sha256:23ed0e3586c6…`, engine `7a8e2beb…`; both `0.2.1` and `latest`.
 
 `-roc981` marks builds that carry our rocBLAS solution table (see below). `0.1.43.1-roc981` is the
 engine in the **released** image: `xxdoman/strata-mi50:0.1.43.1` and `:latest` both point at it
