@@ -21,7 +21,7 @@ docker run -d --name strata \
 # then open http://<host>:8090
 ```
 
-The released engine is **0.1.43.1** (`latest`): [its own page](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md) has the tag, the image sum, the engine binary sum, what it fixes and what was never proven. The locally built `0.1.44.1.b` … `.1.g` images (same engine binary, configurator work) are indexed there too — [engine index](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/README.md).
+The released engine is **0.2.1** (release 0.2.1, engine **0.1.46**, `latest`): [its own page](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.1.md) has the tag, the image sum, the engine binary sum, what it fixes and what was never proven. `0.1.45` is the previous release; the locally built `0.1.44.1.b` … `.1.g` images (same engine binary, configurator work) are indexed there too — [engine index](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/README.md).
 
 Models, conversion packs and the MTP draft stay on the host and are mounted — nothing is baked into
 the image. ROCm 7.2.1 with the gfx906 libraries and rocBLAS kernels packed in (official ROCm images
