@@ -72,11 +72,13 @@ read **652 GB from storage** in one request before the expert complement was pin
 13.4 decode); with `--resident-budget-gib` it gives 323 / 33.8 and no file reads. Rows at 80 W elsewhere in
 this repo were taken on 0.1.46 and are **not** comparable with these.
 
-**What it does not have.** DFlash2 has not been run as a drafter on gfx906 (it compiles; `auto` still means
-MTP), the int8 KV cache on the `q36` path is still absent, and the `--parallel` / image switches are not in
-the configurator (engine and server have them; the form does not). The FP16 prompt path is **not bit-identical**
-to the default one, so the table rows still need an identity gate (KL/bitwise) before they count as free
-speed — and no 80 W rows exist for 0.1.48 yet.
+**What it does not have.** DFlash2, and that is measured, not assumed: the engine refuses `--draft dflash2`
+outside the CLI, and in the CLI it accepted **0 of 126** drafts on gfx906 while MTP took 35 of 56 on the same
+prompt (12.4 tok/s against 40.2) — `auto` means MTP, and the API has no DFlash2 path in this build. Also
+missing: the int8 KV cache on the `q36` path, and the `--parallel` / image switches in the configurator
+(engine and server have them; the form does not). The FP16 prompt path is **not bit-identical** to the default
+one, so the table rows still need an identity gate (KL/bitwise) before they count as free speed — and no 80 W
+rows exist for 0.1.48 yet.
 
 **Full page:** [docs/engines/0.2.3.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.3.md)
 · [wiki](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.3)
