@@ -20,64 +20,91 @@ assistants, with the traps: [llms.txt](https://github.com/xxDoman/strata-gfx906/
 
 ---
 
-## The released engine: 0.2.1 (engine 0.1.46, `latest`)
+## The released engine: 0.2.3 (engine 0.1.48, `latest`)
 
 | | |
 | --- | --- |
-| Image tag | `xxdoman/strata-mi50:0.2.1`, alias `:latest` (7.66 GB) |
+| Image tag | `xxdoman/strata-mi50:0.2.3`, alias `:latest` (7.72 GB) |
+| Manifest digest | `sha256:2320ecd43a7f2c7eb2dec74e664ba0e39900ee4df531639389b0852eb0a63e3b` |
+| Engine binary sum | `sha256 17819efaa84745382e09da852263dbbe935f2777fea34d5a9128ae9d4a880f9d` (39 383 936 B) |
+| Engine reports | `engine=0.1.48`; release `0.2.3`; `--families` = `qwen4exp qwen35moe` |
+| Published tags | `0.2.3` and `latest` — one image, one digest (published 2026-10-23) |
+
+**Two numbers, not one.** Strata has a release number and an engine number, and 0.2.3 ships engine **0.1.48**
+(0.2.2 shipped 0.1.47, 0.2.1 shipped 0.1.46). We tag the image with the release, because that is the number a
+reader sees on the upstream release page; `/opt/strata/RELEASE` carries both.
+
+**What it is.** Upstream tag **v0.2.3** (`5c8dd32`, 2026-10-23, 424 commits since 0.2.1) **plus our E-set** —
+this one is not a clean build. Two fixes of ours are *gone*, because upstream took them: the NVFP4 W4A4 target
+now gets `GGML_USE_HIP` ([#3172](https://github.com/Niko1221/Strata/issues/3172)) and gfx906 compiles
+`moe_f16_kq.cu` itself (#3271). What we still carry:
+
+- **the rocBLAS solution-table reader wired for gfx906** — the reader is upstream, but its gate sits on
+  `STRATA_ENABLE_HIP` and gfx906 takes the `HIP_GFX906` branch, so without the wiring it compiles to nothing
+  and still reports a clean build — with the **gfx906 table** (108 rows, tuned on MI50 against rocBLAS
+  `5.2.0.dabb6df2b9`) and `STRATA_HIP_PROMPT_F16=1`, the FP16 prompt path the table is measured on. The
+  engine logs it live on 0.1.48: `rocBLAS tuning enabled (103 rows, 78 with a solution, gfx906, rocBLAS
+  5.2.0.dabb6df2b9)`;
+- **the Qwen3.6 / Ornith engine (qwen35moe) restored for gfx906** — upstream keeps it out of this build, so
+  `strata --families` would otherwise say `qwen4exp` only. Restored with attention buffers sized from the
+  model geometry plus one slab of margin, `ident`/`rinv` slack, `upload_f32` accepting Q4_K/Q6_K, `X(12)` =
+  Q4_K in `STRATA_D_FMTS`, the cuBLAS name shims and `nextn_predict_layers` optional;
+- **a DFlash2 build fix**: 0.1.48's new drafter calls `cudaDeviceGetStreamPriorityRange` and
+  `cudaStreamCreateWithPriority`, which the wave64 compatibility layer did not map;
+- **the 0.2.3 server, tools, `data/` and the `strata_control` package**, keeping our configurator.
+
+Portable CPU build (`STRATA_PORTABLE=ON`, AVX2 baseline): guard 0 violations over 9 025 functions, 0
+`vpdpbusd` in `ggml_vec_dot_q8_0_q8_0`, and the `qemu -cpu Haswell` probe passes with no SIGILL.
+
+**What it is worth here** — every row at the **factory power cap (MI50 225 W, Radeon VII 250 W)**, HTTP, a
+unique prompt (zero conversation-cache reuse), 128 output tokens, speed from the engine's own accounting:
+
+| model | prompt tok | prompt tok/s | decode tok/s | regime |
+| --- | --- | --- | --- | --- |
+| Flash-Next **IQ2_XXS** | 32 319 | **702** | **46.0** | resident budget, 99.8 % cache hit, 0 file reads |
+| Flash-Next **Q4_K_M** | 35 930 | 323 | 33.8 | resident complement 40.9 GiB, 92.5 % hit |
+| Flash-Next **IQ3_XXS** | 1 564 | 293 | 36.7 | resident complement 14.3 GiB, 98.9 % hit |
+| Ornith **Q4_K_M** (`q36`) | 2 229 | 1 026 | 68.0 | two rounds, spread < 0.4 % |
+| Ornith **Q4_K_M** (`q36`) | 8 744 | 993 | 56.0 | same run |
+
+**The resident budget is what moves decode, not the new tag.** The same 35 930-token request on this image
+read **652 GB from storage** in one request before the expert complement was pinned in RAM (148 tok/s prompt,
+13.4 decode); with `--resident-budget-gib` it gives 323 / 33.8 and no file reads. Rows at 80 W elsewhere in
+this repo were taken on 0.1.46 and are **not** comparable with these.
+
+**What it does not have.** DFlash2 has not been run as a drafter on gfx906 (it compiles; `auto` still means
+MTP), the int8 KV cache on the `q36` path is still absent, and the `--parallel` / image switches are not in
+the configurator (engine and server have them; the form does not). The FP16 prompt path is **not bit-identical**
+to the default one, so the table rows still need an identity gate (KL/bitwise) before they count as free
+speed — and no 80 W rows exist for 0.1.48 yet.
+
+**Full page:** [docs/engines/0.2.3.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.3.md)
+· [wiki](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.3)
+
+---
+
+## The previous release: 0.2.1 (engine 0.1.46)
+
+| | |
+| --- | --- |
+| Image tag | `xxdoman/strata-mi50:0.2.1` (7.66 GB) |
 | Manifest digest | `sha256:23ed0e3586c6ebb727fdaed558539acdfcc70d39d84ed60f545df3ec83b1298c` |
 | Engine binary sum | `sha256 7a8e2beb308f8ab928ed7d2192c5b569eb7b741c3b5da42b8c56d481e6fc0f8c` (38 443 528 B) |
 | Engine reports | `engine=0.1.46`; release `0.2.1` |
-| Published tags | `0.2.1` and `latest` — one image, one digest (published 2026-10-21) |
+| Published | 2026-10-21 (was `latest` until 2026-10-23) |
 
-**Two numbers, not one.** Strata has a release number and an engine number, and 0.2.1 ships engine
-**0.1.46** (upstream calls its own packages `strata-engine-0.1.46-*`). We tag the image with the release,
-because that is the number a reader sees on the upstream release page.
-
-**What it is.** Upstream tag **v0.2.1** (`90767252`) — the first non-beta 0.2.x — builds for gfx906 with **no
-local patches**: upstream fixed the three gfx906 blockers we reported in issue #3172 (the Qwen3.6 engine kept
-out of the gfx906 build, `GGML_USE_HIP` on the W4A4 target, the trellis overlay and `moe_f16_kq` in the HIP
-source list), and the gfx906 dp4a path is upstream now. On top of that we add three things:
-
-- **the rocBLAS solution-table reader wired for gfx906** (the reader is upstream, but its gate sits on
-  `STRATA_ENABLE_HIP` and gfx906 takes the `HIP_GFX906` branch — without the wiring it compiles to nothing),
-  with the **gfx906 table** (108 rows, tuned on MI50 against rocBLAS `5.2.0.dabb6df2b9`) and
-  `STRATA_HIP_PROMPT_F16=1`, the FP16 prompt path the table is measured on;
-- **the Qwen3.6 / Ornith engine (qwen35moe) restored for gfx906** — upstream keeps it out of this build, so
-  `strata --families` would otherwise say `qwen4exp` only. Restored with attention buffers sized from the
-  model geometry, `ident`/`rinv` slack, `upload_f32` accepting Q4_K/Q6_K, `X(12)` = Q4_K in `STRATA_D_FMTS`,
-  the cuBLAS name shims and `nextn_predict_layers` optional;
-- **the 0.2.1 server, tools, `data/` and the `strata_control` package**, keeping our configurator.
-
-Portable CPU build (`STRATA_PORTABLE=ON`, AVX2 baseline): guard 0 violations, 0 `vpdpbusd`, and the
-`qemu -cpu Haswell` probe passes with no SIGILL.
-
-**What it is worth here** (Qwen3.8-Flash-Next-Uncensored IQ2_XXS pack, kv int8, `--mmap-experts`, ctx 65536,
-MTP spec 3, MI50, HTTP, medians of 3):
-
-| power | variant | prompt tok/s | decode tok/s |
-| --- | --- | --- | --- |
-| 80 W | clean 0.1.46 | 246–253 | 28.4–29.7 |
-| 80 W | + FP16 prompt path | 275–276 | unchanged |
-| 80 W | + FP16 + rocBLAS table | **308–310** | unchanged |
-| 225 W | 0.1.46 vs 0.1.45 | identical (≤1 %) | noise |
-
-The table covers the dense prompt GEMMs, so **decode does not move** — the experts run through MMQ. On the
-`qwen35moe` path (Qwen3.6-35B-A3B-UD-Q6_K, `--layer-split auto`, two cards) prefill is **951 tok/s at 4K**
-and **791 at 16K**, with 64.4 / 43.1 decode. Qwen3.6 Q6_K and Ornith Q4_K_M both start on this binary;
-Ornith also runs on a single Radeon VII 16 GB (15.9 GB used — tight).
-
-**What it does not have.** The int8 KV cache on the `q36` path (that was the 0.1.44.1 line) and the
-`--parallel` / image switches in the configurator (engine and server have them; the form does not). The FP16
-prompt path is **not bit-identical** to the default one, so the table rows still need an identity gate
-(KL/bitwise) before they count as free speed.
+Upstream tag **v0.2.1** (`90767252`) — the first non-beta 0.2.x, built for gfx906 **clean**, with no local
+engine patches — plus the rocBLAS table reader wired for gfx906, the gfx906 table with the FP16 prompt path,
+and the qwen35/36 engine restored. At 80 W, IQ2_XXS pack: 246–253 tok/s prompt clean, 275–276 with the FP16
+prompt path and **308–310** with the table on top, decode 28.4–29.7 throughout; `qwen35moe` on two cards
+prefill **951** at 4K and **791** at 16K with 64.4 / 43.1 decode.
 
 **Full page:** [docs/engines/0.2.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.1.md)
 · [wiki](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.1)
 
 ---
 
-## The previous release: 0.1.45
+## Older release: 0.1.45
 
 | | |
 | --- | --- |
@@ -102,11 +129,11 @@ the pack path (both cards, kv q4_0) **356 / 447 / 465** and **38.7 / 35.9 / 35.9
 
 | | |
 | --- | --- |
-| Image tag | `xxdoman/strata-mi50:0.1.44.1`, alias `:latest` (7.59 GB) |
+| Image tag | `xxdoman/strata-mi50:0.1.44.1`, alias `:0.1.44.1.cpuid` (7.59 GB) |
 | Image sum | `sha256:e2a48af744d4fe9e0e6a7ff1304ba87f406bb9f6f0e295b431c73cb8aad0c53e` — one image behind all three published tags |
 | Engine binary sum | `sha256 bcd88b367a4c709cf09203ed0687bb3992cbc68e8b0c91216627a277b45f2afb` |
 | Engine reports | `engine=0.1.44.1` |
-| Published tags | `0.1.44.1`, `latest` and `0.1.44.1.cpuid` — three names, one manifest digest |
+| Published tags | `0.1.44.1`, `latest` (until 2026-10-18) and `0.1.44.1.cpuid` — three names, one manifest digest |
 
 **What it is.** Upstream tag **v0.1.44.1** plus **11 of our gfx906/q36 patches**, an **int8 KV cache** on
 the `q36` path, the **gfx906 rocBLAS solution table** and configurator work. There is **no separate

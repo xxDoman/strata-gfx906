@@ -7,20 +7,29 @@ worth in a measurement. Upstream's own engine changelog lives in their repositor
 ## Tags we built
 
 ```
-0.2.1            0.1.45           0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
+0.2.3            0.2.1            0.1.45           0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
   0.1.39-v3        0.1.40.4         0.1.41.v2         0.1.42-roc981     0.1.43-roc981     0.1.43.1-roc981
   0.1.39-854       0.1.40-i1187     0.1.41-roc981
                    0.1.40-pool
 ```
 
-**0.2.1** (2026-10-21, engine **0.1.46**) is the released image: upstream v0.2.1 builds for gfx906 with no
-local patches (issue #3172 fixed upstream), and we add the rocBLAS table reader wired for gfx906 with the
-tuned gfx906 table plus `STRATA_HIP_PROMPT_F16=1`, the qwen35/36 engine restored for gfx906, and the 0.2.1
-server/tools/`strata_control`. Digest `sha256:23ed0e3586c6…`, engine `7a8e2beb…`; both `0.2.1` and `latest`.
+**0.2.3** (2026-10-23, engine **0.1.48**) is the released image: upstream v0.2.3 plus our E-set. Two patches of
+ours went upstream and are no longer applied — the W4A4 gate (#3172: the target now gets `GGML_USE_HIP`) and the
+`f16kq` link stub (#3271: gfx906 compiles `moe_f16_kq.cu` itself). Still ours: the rocBLAS table reader wired
+for gfx906 with the tuned gfx906 table plus `STRATA_HIP_PROMPT_F16=1`, the qwen35/36 engine restored for gfx906,
+a DFlash2 build fix (two CUDA stream-priority names), and the 0.2.3 server/tools/`strata_control`. Digest
+`sha256:2320ecd43a7f…`, engine `17819efa…`; both `0.2.3` and `latest`.
+
+**0.2.1** (2026-10-21, engine **0.1.46**) is the previous release: upstream v0.2.1 built for gfx906 with no
+local patches (issue #3172 fixed upstream), plus the rocBLAS table reader wired for gfx906 with the tuned
+gfx906 table and `STRATA_HIP_PROMPT_F16=1`, the qwen35/36 engine restored, and the 0.2.1
+server/tools/`strata_control`. Digest `sha256:23ed0e3586c6…`, engine `7a8e2beb…`; it was `latest` until
+2026-10-23.
 
 `-roc981` marks builds that carry our rocBLAS solution table (see below). `0.1.43.1-roc981` is the
-engine in the **released** image: `xxdoman/strata-mi50:0.1.43.1` and `:latest` both point at it
-(published 2026-10-12). `0.1.43` stays as the previous release; `0.1.43-test` is the pre-release build
+engine of the 0.1.43.1 image: `xxdoman/strata-mi50:0.1.43.1` points at it (published 2026-10-12) —
+`:latest` no longer does, it moved to 0.1.45, then 0.2.1, then 0.2.3. `0.1.43` is older still;
+`0.1.43-test` is the pre-release build
 of the same engine without the two fixes described under 0.1.43.1 below. Tag state is still worth
 taking from the live Hub rather than from a note like this one:
 
@@ -152,7 +161,7 @@ docker images --digests | grep strata-mi50          # tag vs digest
 curl -s https://hub.docker.com/v2/repositories/xxdoman/strata-mi50/tags   # what is on the Hub
 ```
 
-## 0.1.45 (published 2026-10-18) — the current release
+## 0.1.45 (published 2026-10-18) — an earlier release
 
 Upstream **v0.1.45** plus our **E1–E7**. Two patches of the 0.1.44.1 line were absorbed upstream and are not
 re-applied: the geometry guard for an all-zero `compress_ratios` (#2396) and the rocBLAS table reader itself
@@ -171,3 +180,31 @@ bigger default prompt chunk — which is exactly what makes **E1** mandatory rat
 | Not in it | the `q36` int8 KV cache (0.1.44.1 line) and `--parallel` / image switches in the configurator |
 
 Full page: [docs/engines/0.1.45.md](engines/0.1.45.md).
+
+## 0.2.3 (published 2026-10-23) — the current release
+
+Upstream **v0.2.3** (`5c8dd32`, 424 commits, 566 files since 0.2.1) plus our **E-set** — this one is not a
+clean build. Two patches of ours were absorbed upstream and are no longer applied: the W4A4 gate (#3172, the
+target now gets `GGML_USE_HIP`) and the `f16kq` link stub (#3271, gfx906 compiles `moe_f16_kq.cu` itself and it
+*is* the stub there). One **new** build break appeared: 0.1.48's DFlash2 drafter calls
+`cudaDeviceGetStreamPriorityRange` and `cudaStreamCreateWithPriority`, which the wave64 compat layer did not map
+— two `#define`s in `platform/hip_compat/strata_hip.h`. The release's own numbers are Strix Halo (Windows) and
+RTX-class cards; **nothing in 0.2.3's notes was measured on gfx906**.
+
+| | |
+|---|---|
+| Engine | `17819efaa8474538…` (39 383 936 B), `engine=0.1.48`, families `qwen4exp qwen35moe` |
+| Image | `sha256:2320ecd43a7f2c7e…` (7.72 GB), tags `0.2.3` + `latest` |
+| Build | container, `-DSTRATA_PORTABLE=ON -DSTRATA_Q6K_EXPERTS=ON -DSTRATA_MMQ_KQUANTS=ON`, `BUILD=0` in ~4 min; `mmq::Context::run` 0x36a, rocBLAS reader present |
+| Measured (225 W / 250 W caps, 2026-10-23, 128 output tokens, unique prompts) | IQ2_XXS pack 32K: **702 PP / 46.0 TG** · Q4_K_M 36K: 323 / 33.8 · IQ3_XXS 1.5K: 293 / 36.7 · Ornith Q4_K_M `q36`: 1 026 / 68.0 at 2.2K and 993 / 56.0 at 8.7K |
+| Against 0.2.1 | no matched arm yet — the 80 W book rows were taken on 0.1.46, today's rows at the factory cap |
+| Not in it | DFlash2 as a drafter on gfx906 (it compiles), the `q36` int8 KV cache, `--parallel` / image switches in the configurator |
+
+The one finding worth carrying to every future measurement: on this image **decode speed is decided by where
+the experts live, not by the tag**. The same 35 930-token request read 652 GB from storage and gave 148 tok/s
+prompt / 13.4 decode with the experts on disk; once the expert complement was pinned in RAM
+(`--resident-budget-gib`) it gave 323 / 33.8 with zero file reads. The engine pins only the *complement of the
+GPU cache*, so the `resident RAM: X GiB` line is that complement, not the budget that was typed (50 GiB set,
+14.3 GiB pinned on IQ3_XXS because both cards were already full).
+
+Full page: [docs/engines/0.2.3.md](engines/0.2.3.md).

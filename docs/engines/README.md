@@ -7,8 +7,9 @@ links to.
 
 Two things to keep separate before you quote any tag:
 
-- **`0.2.1` / `latest`** is the **published** image. It is what `docker pull` gives you, and it is the
-  only engine here that a reader can reproduce.
+- **`0.2.3` / `latest`** is the **published** image. It is what `docker pull` gives you, and it is the
+  only engine here that a reader can reproduce. **`0.2.1`** is the previous release (it was `latest`
+  until 2026-10-23).
 - The **`0.1.44.1.b` … `.1.g`** line is built and smoke-tested **locally** (same engine binary, different
   configurator). None of those tags was pushed, so no registry digest exists for them and nobody outside
   this machine can pull them. They are documented here because they are real measurements and real
@@ -16,8 +17,9 @@ Two things to keep separate before you quote any tag:
 
 | Image tag | Image sum (short) | Engine binary | What it fixes | On Docker Hub |
 | --- | --- | --- | --- | --- |
-| [`0.2.1`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.1.md) · `latest` | `23ed0e3586c6` (`sha256:23ed0e3586c6ebb727fda…`) | `7a8e2beb…` (38 443 528 B) | clean v0.2.1 for gfx906; rocBLAS table wired + gfx906 table + FP16 prompt path; qwen35/36 restored | **yes** (2026-10-21) |
-| [`0.1.43.1`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md) · `latest` | `6e9002179e55` (`sha256:6e9002179e55…`) | `c78456f3…` | upstream 0.1.43.1 hotfix + our rocBLAS table reader, AMD report header, per-card VRAM reserve floor | **yes** |
+| [`0.2.3`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.3.md) · `latest` | `2320ecd43a7f` (`sha256:2320ecd43a7f2c7e…`) | `17819efa…` (39 383 936 B) | engine 0.1.48 from v0.2.3 + our E-set: rocBLAS table wired + gfx906 table + FP16 prompt path, qwen35/36 restored, DFlash2 CUDA names; W4A4 and `f16kq` are upstream now | **yes** (2026-10-23) |
+| [`0.2.1`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.1.md) | `23ed0e3586c6` (`sha256:23ed0e3586c6ebb727fda…`) | `7a8e2beb…` (38 443 528 B) | clean v0.2.1 for gfx906; rocBLAS table wired + gfx906 table + FP16 prompt path; qwen35/36 restored | **yes** (2026-10-21, was `latest` until 2026-10-23) |
+| [`0.1.43.1`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md) | `6e9002179e55` (`sha256:6e9002179e55…`) | `c78456f3…` | upstream 0.1.43.1 hotfix + our rocBLAS table reader, AMD report header, per-card VRAM reserve floor | **yes** |
 | [`0.1.44.1.b`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.44.1.b.md) | `323ae9493819` | `9859791a…` | `Models Infos` panel, metadata repair on header copies, Start blocked for models that cannot load | no — local |
 | [`0.1.44.1.c`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.44.1.c.md) | `d16941ac6456` | `9859791a…` | pack build as a button (API + atomic `.tmp`→rename), model list out of the Configuration tab | no — local |
 | [`0.1.44.1.d`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.44.1.d.md) | `93a52b89ca6b` | `9859791a…` | metadata repair no longer sacrifices header keys — every model-file write behind a hard gate | no — local |

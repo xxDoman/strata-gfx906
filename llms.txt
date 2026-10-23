@@ -7,16 +7,18 @@
 
 - The **packaging** for running the **Strata** inference engine on AMD **gfx906** cards (Vega 20:
   Instinct MI50 / MI60, Radeon VII) as a Docker image with a web configurator.
-- Published image: `xxdoman/strata-mi50:0.2.1` and `:latest` — release **0.2.1**, engine **0.1.46**
-  (upstream tag `v0.2.1`, `90767252`). `0.1.45` is the previous release. Digest `sha256:23ed0e3586c6…`,
-  engine binary `7a8e2beb…`.
-- On gfx906 the 0.2.1 engine builds with **no local patches** (issue #3172 fixed upstream). We add the
-  rocBLAS solution-table reader wired for gfx906, with the tuned gfx906 table plus
-  `STRATA_HIP_PROMPT_F16=1`, and the qwen35/36 engine restored for gfx906 (`--families` =
-  `qwen4exp qwen35moe`; Qwen3.6-35B and Ornith both start).
-- Measured on this box, Qwen3.8-Flash-Next IQ2_XXS pack, MI50 at 80 W: prompt 246–253 tok/s clean,
-  275–276 with the FP16 prompt path, **308–310 with the rocBLAS table**; decode unchanged (the table covers
-  dense prompt GEMMs, experts run through MMQ). At 225 W 0.1.46 equals 0.1.45 within 1 %.
+- Published image: `xxdoman/strata-mi50:0.2.3` and `:latest` — release **0.2.3**, engine **0.1.48**
+  (upstream tag `v0.2.3`, `5c8dd32`). `0.2.1` is the previous release (engine 0.1.46) and was `latest`
+  until 2026-10-23. Digest `sha256:2320ecd43a7f…`, engine binary `17819efa…`.
+- On gfx906 the 0.2.3 engine needs a small patch set (this one is not a clean build): two fixes of ours went
+  upstream in 0.2.1 (#3172 W4A4, #3271 `f16kq`), and what remains is the rocBLAS solution-table reader wired
+  for gfx906 with the tuned gfx906 table plus `STRATA_HIP_PROMPT_F16=1`, the qwen35/36 engine restored for
+  gfx906 (`--families` = `qwen4exp qwen35moe`; Qwen3.6-35B and Ornith both start), and two CUDA
+  stream-priority names that 0.1.48's DFlash2 drafter calls.
+- Measured on this box at the factory power cap (MI50 225 W), HTTP, unique prompts, 128 output tokens:
+  IQ2_XXS pack at 32K prompt **702 tok/s prompt / 46.0 decode** with the expert complement pinned in RAM;
+  Q4_K_M at 36K 323 / 33.8; Ornith Q4_K_M on the `q36` path 1 026 / 68.0 at 2.2K and 993 / 56.0 at 8.7K.
+  The 80 W rows in `docs/measurements.md` were taken on 0.1.46 and are not comparable with these.
 - Upstream engine: <https://github.com/Niko1221/Strata> (MIT). We do not change model weights, and none
   of our patches changes the model's quality.
 
