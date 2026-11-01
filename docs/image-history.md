@@ -7,7 +7,7 @@ worth in a measurement. Upstream's own engine changelog lives in their repositor
 ## Tags we built
 
 ```
-0.2.3            0.2.1            0.1.45           0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
+0.2.9.b-test     0.2.3            0.2.1            0.1.45           0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
   0.1.39-v3        0.1.40.4         0.1.41.v2         0.1.42-roc981     0.1.43-roc981     0.1.43.1-roc981
   0.1.39-854       0.1.40-i1187     0.1.41-roc981
                    0.1.40-pool
@@ -208,3 +208,31 @@ GPU cache*, so the `resident RAM: X GiB` line is that complement, not the budget
 14.3 GiB pinned on IQ3_XXS because both cards were already full).
 
 Full page: [docs/engines/0.2.3.md](engines/0.2.3.md).
+
+## 0.2.9.b-test (published 2026-11-01) — a test tag, not a release
+
+Upstream **v0.2.9** (`c62d5e3`, engines from commit `99866a47`, 31 Oct) plus our **E-set**, re-based: two
+hunks no longer applied, because upstream moved under them. The attention-score-buffer fix keeps the 512-row
+warmup — #4708 rewrote the line to `min(tmax, ctx)`, which still warms a whole 2048/4096 chunk when the
+context is large — and `X(12)` = Q4_K is **still** missing from `STRATA_D_FMTS` (upstream added 147/148/149 to
+that list and left 12 in `GU`/`MMVQ` only), so it is inserted by hand again. Everything else applied with
+offsets. `0.2.8` (29 Oct) was skipped on purpose: 0.2.9 supersedes it two days later.
+
+The 0.2.8/0.2.9 notes name Strix Halo, NVIDIA, Intel Arc B, RDNA **gfx12**, DeepSeek GGUF layouts and Unsloth
+1-bit sets — **gfx906 appears nowhere**, so this tag claims no speed (A/B against 0.1.52 on one MI50 at 80 W
+was parity within run-to-run spread).
+
+| | |
+|---|---|
+| Engine | `905c35dc5b8870d9…` (44 300 472 B), `engine=0.1.55`, families `qwen4exp qwen35moe` |
+| Image | `sha256:76542269a1d28034…` (7.73 GB), tag `0.2.9.b-test` only — `latest` stays on 0.2.3 |
+| Build | container `rocm/dev-ubuntu-24.04:7.2.1`, same flags, llama.cpp pin `3cf03257` reused; 166 targets, 0 errors |
+| Release gate | passed (boot, ISA 0 violations, no `vpdpbusd`, Haswell qemu probe, model scan, registry tags); point (d) GPU pack load **not** run |
+| Not in it | a speed claim, a GPU pack-load run, DFlash2 on gfx906 (still 0 of 126 drafts) |
+
+One finding belongs to upstream, not to this build: the ISA guard flags `iq512x_rows` and
+`iq512_reference_gu_rows` because `WIDE_PUBLIC` in `tools/check_isa_guard.py` never got those two names
+(added in 0.2.5). Both are reached only behind `cpu_avx512_ok()`, and **the 0.1.52 binary carries the same two
+findings** — so it is bookkeeping, and our copy of the guard now lists them with the reason in the comment.
+
+Full page: [docs/engines/0.2.9.md](engines/0.2.9.md).

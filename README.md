@@ -41,7 +41,7 @@ now gets `GGML_USE_HIP` ([#3172](https://github.com/Niko1221/Strata/issues/3172)
 
 - **the rocBLAS solution-table reader wired for gfx906** — the reader is upstream, but its gate sits on
   `STRATA_ENABLE_HIP` and gfx906 takes the `HIP_GFX906` branch, so without the wiring it compiles to nothing
-  and still reports a clean build — with the **gfx906 table** (108 rows, tuned on MI50 against rocBLAS
+  and still reports a clean build — with the **gfx906 table** (104 rows, tuned on MI50 against rocBLAS
   `5.2.0.dabb6df2b9`) and `STRATA_HIP_PROMPT_F16=1`, the FP16 prompt path the table is measured on. The
   engine logs it live on 0.1.48: `rocBLAS tuning enabled (103 rows, 78 with a solution, gfx906, rocBLAS
   5.2.0.dabb6df2b9)`;
@@ -82,6 +82,33 @@ rows exist for 0.1.48 yet.
 
 **Full page:** [docs/engines/0.2.3.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.3.md)
 · [wiki](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.3)
+
+---
+
+## The test tag: 0.2.9.b-test (engine 0.1.55)
+
+Not a release — `latest` and `0.2.3` are untouched. Pullable and gated, for anyone who wants the newer
+application layer before it is promoted.
+
+| | |
+| --- | --- |
+| Image tag | `xxdoman/strata-mi50:0.2.9.b-test` (7.73 GB) |
+| Manifest digest | `sha256:76542269a1d280341e1486cb8165a7a3a5e5c9404500d7fd09d34bbead2c470f` |
+| Engine binary sum | `sha256 905c35dc5b8870d9f68ad9372691ca7ffbc590c18f5015f9040b6215575f86f8` (44 300 472 B) |
+| Engine reports | `engine=0.1.55`; release `0.2.9`; `--families` = `qwen4exp qwen35moe` |
+| Built from | upstream tag `v0.2.9` (`c62d5e3`, 2026-10-31); engines come from commit `99866a47` — plus our E-set |
+| Published | 2026-11-01, test tag only |
+
+Upstream 0.2.8/0.2.9 name Strix Halo, NVIDIA, Intel Arc B, RDNA **gfx12**, DeepSeek GGUF layouts and
+Unsloth 1-bit sets; **gfx906 is not named anywhere**, so this tag claims **no speed**. An A/B against 0.1.52
+(one MI50, 80 W, same model and flags, four interleaved arms) came out at **parity within run-to-run
+spread** — the spread is wider than the difference, so no throughput numbers are published. What it does
+carry is the 0.2.9 server/tools/`data/` and two E-set hunks re-based against upstream moves: the 512-row
+attention warmup (upstream #4708 caps by context alone) and `X(12)` = Q4_K, still absent from
+`STRATA_D_FMTS`. `0.2.8` was skipped on purpose — 0.2.9 supersedes it two days later.
+
+**Full page:** [docs/engines/0.2.9.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.9.md)
+· [wiki](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.9)
 
 ---
 
@@ -132,13 +159,16 @@ the pack path (both cards, kv q4_0) **356 / 447 / 465** and **38.7 / 35.9 / 35.9
 | | |
 | --- | --- |
 | Image tag | `xxdoman/strata-mi50:0.1.44.1`, alias `:0.1.44.1.cpuid` (7.59 GB) |
-| Image sum | `sha256:e2a48af744d4fe9e0e6a7ff1304ba87f406bb9f6f0e295b431c73cb8aad0c53e` — one image behind all three published tags |
+| Image sum | `sha256:fb18b482449b2eaf509bb40c2333655bce6ccd7eb61c40405020a010b3e6daca` — one manifest behind all three published tags |
 | Engine binary sum | `sha256 bcd88b367a4c709cf09203ed0687bb3992cbc68e8b0c91216627a277b45f2afb` |
 | Engine reports | `engine=0.1.44.1` |
 | Published tags | `0.1.44.1`, `latest` (until 2026-10-18) and `0.1.44.1.cpuid` — three names, one manifest digest |
 
 **What it is.** Upstream tag **v0.1.44.1** plus **11 of our gfx906/q36 patches**, an **int8 KV cache** on
-the `q36` path, the **gfx906 rocBLAS solution table** and configurator work. There is **no separate
+the `q36` path, the **gfx906 rocBLAS solution table** and configurator work. The table ships as a file
+(`/opt/strata/tools/hip/gfx906-rocblas-5.2.0.dabb6df2b9.txt`) but this image sets **no**
+`STRATA_ROCBLAS_TUNING`, so the table is **off** here unless you point the variable at it yourself — the
+`/opt/strata/rocblas-tuning.txt` path and the env default arrive with `0.2.1`. There is **no separate
 "plain" image and "portable" image**: the portable CPU build **is** the release, and `.cpuid` is simply an
 extra alias so that the person who reported issue #2 can pin that exact build. `0.1.44.1.h` was never
 published. The per-card **VRAM reserve floor** on a layer split ([issue
@@ -181,8 +211,10 @@ network pool** — that lives only in `0.1.40.1-pool`.
 old AVX-VNNI fault, so pin it only on a host that does have AVX-VNNI; its full page is **[engine
 0.1.43.1](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md)**.
 
-Full page, with the fixed header (tag, sums, what it fixes, how proven, what is not): **[engine
-0.1.44.1](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.44.1.md)**.
+Full page, with the fixed header (tag, sums, what it fixes, how proven, what is not): the **engine index**
+lists the `0.1.44.1` line build by build (`.b` … `.g`), each with its own page —
+**[engine index](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/README.md)**. There is no
+single page for the `0.1.44.1` tag itself.
 
 **The local, unpublished builds** (`0.1.44.1.b` … `.1.h`, configurator work plus one engine rebuild at
 `.h`) are documented in the engine index because they are real fixes and real measurements — but they
@@ -235,9 +267,11 @@ Every link below is absolute on purpose: relative paths do not work on the Docke
 | Page | In this repository | On the wiki |
 | --- | --- | --- |
 | Engine index — all tags, sums, status | [docs/engines](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/README.md) | [Engines](https://github.com/xxDoman/strata-gfx906/wiki/Engines) |
-| Engine 0.1.45 — the released one | [docs/engines/0.1.45.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.45.md) | [Engine-0.1.45](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.45) |
-| Engine 0.1.44.1 — previous | [docs/engines/0.1.44.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.44.1.md) | [Engine-0.1.44.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.44.1) |
-| Engine 0.1.43.1 — previous release, still pullable | [docs/engines/0.1.43.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md) | [Engine-0.1.43.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.43.1) |
+| Engine 0.2.3 — the released one (`latest`) | [docs/engines/0.2.3.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.3.md) | [Engine-0.2.3](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.3) |
+| Engine 0.2.9 — the test tag | [docs/engines/0.2.9.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.9.md) | [Engine-0.2.9](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.9) |
+| Engine 0.2.1 — previous release | [docs/engines/0.2.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.1.md) | [Engine-0.2.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.1) |
+| Engine 0.1.45 — older release | [docs/engines/0.1.45.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.45.md) | [Engine-0.1.45](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.45) |
+| Engine 0.1.43.1 — older release, still pullable | [docs/engines/0.1.43.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md) | [Engine-0.1.43.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.43.1) |
 | Image history — what is in each tag, which fixes are ours | [docs/image-history.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/image-history.md) | [image-history](https://github.com/xxDoman/strata-gfx906/wiki/image-history) |
 | Measurements — every number with its regime | [docs/measurements.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/measurements.md) | [measurements](https://github.com/xxDoman/strata-gfx906/wiki/measurements) |
 | Benchmarks — the measured tables | [docs/benchmarks.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/benchmarks.md) | [benchmarks](https://github.com/xxDoman/strata-gfx906/wiki/benchmarks) |

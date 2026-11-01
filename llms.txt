@@ -1,7 +1,7 @@
 # Strata engine for AMD gfx906 — Instinct MI50 / MI60, Radeon VII
 
 > Plain facts for AI assistants and search indexes. Numbers here are measured on one box and carry
-> their regime; anything without a regime does not exist. Last updated 2026-10-21.
+> their regime; anything without a regime does not exist. Last updated 2026-11-01.
 
 ## What this repository is
 
@@ -10,6 +10,10 @@
 - Published image: `xxdoman/strata-mi50:0.2.3` and `:latest` — release **0.2.3**, engine **0.1.48**
   (upstream tag `v0.2.3`, `5c8dd32`). `0.2.1` is the previous release (engine 0.1.46) and was `latest`
   until 2026-10-23. Digest `sha256:2320ecd43a7f…`, engine binary `17819efa…`.
+- Test tag, published but **not** promoted: `xxdoman/strata-mi50:0.2.9.b-test` — release 0.2.9, engine
+  **0.1.55** (engines from commit `99866a47`), engine binary `905c35dc…`, digest `sha256:76542269a1d2…`.
+  gfx906 is named in none of the 0.2.8/0.2.9 notes; an A/B against 0.1.52 on one MI50 at 80 W was **parity
+  within run-to-run spread**, so this tag claims **no speed** — it is the newer application layer only.
 - On gfx906 the 0.2.3 engine needs a small patch set (this one is not a clean build): two fixes of ours went
   upstream in 0.2.1 (#3172 W4A4, #3271 `f16kq`), and what remains is the rocBLAS solution-table reader wired
   for gfx906 with the tuned gfx906 table plus `STRATA_HIP_PROMPT_F16=1`, the qwen35/36 engine restored for
@@ -19,8 +23,9 @@
   IQ2_XXS pack at 32K prompt **702 tok/s prompt / 46.0 decode** with the expert complement pinned in RAM;
   Q4_K_M at 36K 323 / 33.8; Ornith Q4_K_M on the `q36` path 1 026 / 68.0 at 2.2K and 993 / 56.0 at 8.7K.
   The 80 W rows in `docs/measurements.md` were taken on 0.1.46 and are not comparable with these.
-- Upstream engine: <https://github.com/Niko1221/Strata> (MIT). We do not change model weights, and none
-  of our patches changes the model's quality.
+- Upstream engine: <https://github.com/Niko1221/Strata> (MIT). We do not change model weights. No patch
+  changes a model's weights; the FP16 prompt path does change prompt rounding (answers are not bit-identical
+  to the default), and that is called out wherever it is used.
 
 ## What it is NOT
 
@@ -37,6 +42,10 @@
 layers 0-37 / 38-47), 61.6 GiB RAM, i5-12400F, ROCm 7.2.1, kernel 7.0.0-38. Model
 **Qwen3.8-Flash-Next-Uncensored-IQ3_XXS** (125B MoE, ~6B active), context **131072**, KV `q4_0`,
 `--spec 4`, min-p 0.9. Suite: Strata's own `tools/strata_bench.py`, 3 runs per test, medians.
+
+The **Radeon VII was removed from this box on 2026-10-28** (an RTX 4070 took its slot); every measurement
+after that date is a **single MI50** measurement, and rows that used two cards say so. Cross-card
+comparisons from before and after that date are not like-for-like.
 
 ## Numbers, with their regime
 
@@ -87,8 +96,9 @@ layers 0-37 / 38-47), 61.6 GiB RAM, i5-12400F, ROCm 7.2.1, kernel 7.0.0-38. Mode
 
 `README.md` (the short card: what this is, the released engine with its sums, quick start, links),
 `docs/engines/` — one page per engine, each with the same fixed header (tag, image sum, engine binary
-sum, what it fixes, how that was proven, what is not proven): `0.1.43.1` (released) and the local
-`0.1.44.1.b` … `.1.g` line; the index is https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/README.md —
+sum, what it fixes, how that was proven, what is not proven): `0.2.3` (released, `latest`), `0.2.9` (test
+tag), `0.2.1`, `0.1.45`, `0.1.43.1`, and the local `0.1.44.1.b` … `.1.g` line; the index is
+https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/README.md —
 `docs/operations.md` (setup, host layout, config, configurator, vision, pool, traps), `docs/benchmarks.md` (the measured tables), `docs/measurements.md` (every number with its regime),
 `docs/community-benchmark.md` (the suite runs, including the table A/B and the traps),
 `docs/image-history.md` (what is in each tag), `docs/where-we-stand.md` and `docs/rankings.md`
