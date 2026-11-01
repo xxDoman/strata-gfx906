@@ -20,7 +20,31 @@ assistants, with the traps: [llms.txt](https://github.com/xxDoman/strata-gfx906/
 
 ---
 
-## The released engine: 0.2.3 (engine 0.1.48, `latest`)
+## The released engine: 0.2.9 (engine 0.1.55, `latest`)
+
+| | |
+| --- | --- |
+| Image tag | `xxdoman/strata-mi50:0.2.9`, alias `:latest` (7.73 GB) |
+| Manifest digest | `sha256:76542269a1d280341e1486cb8165a7a3a5e5c9404500d7fd09d34bbead2c470f` |
+| Engine binary sum | `sha256 905c35dc5b8870d9f68ad9372691ca7ffbc590c18f5015f9040b6215575f86f8` (44 300 472 B) |
+| Engine reports | `engine=0.1.55`; release `0.2.9`; `--families` = `qwen4exp qwen35moe` |
+| Built from | upstream tag `v0.2.9` (`c62d5e3`, 2026-10-31); engines come from commit `99866a47` — plus our E-set |
+| Published | 2026-11-02 — `0.2.9` and `latest`, one digest |
+
+Upstream 0.2.8/0.2.9 name Strix Halo, NVIDIA, Intel Arc B, RDNA **gfx12**, DeepSeek GGUF layouts and
+Unsloth 1-bit sets; **gfx906 is not named anywhere**, so this tag claims **no speed**. An A/B against 0.1.52
+(one MI50, 80 W, same model and flags, four interleaved arms) came out at **parity within run-to-run
+spread** — the spread is wider than the difference, so no throughput numbers are published. What it does
+carry is the 0.2.9 server/tools/`data/` and two E-set hunks re-based against upstream moves: the 512-row
+attention warmup (upstream #4708 caps by context alone) and `X(12)` = Q4_K, still absent from
+`STRATA_D_FMTS`. `0.2.8` was skipped on purpose — 0.2.9 supersedes it two days later.
+
+**Full page:** [docs/engines/0.2.9.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.9.md)
+· [wiki](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.9)
+
+---
+
+## The previous release: 0.2.3 (engine 0.1.48)
 
 | | |
 | --- | --- |
@@ -28,7 +52,7 @@ assistants, with the traps: [llms.txt](https://github.com/xxDoman/strata-gfx906/
 | Manifest digest | `sha256:2320ecd43a7f2c7eb2dec74e664ba0e39900ee4df531639389b0852eb0a63e3b` |
 | Engine binary sum | `sha256 17819efaa84745382e09da852263dbbe935f2777fea34d5a9128ae9d4a880f9d` (39 383 936 B) |
 | Engine reports | `engine=0.1.48`; release `0.2.3`; `--families` = `qwen4exp qwen35moe` |
-| Published tags | `0.2.3` and `latest` — one image, one digest (published 2026-10-23) |
+| Published tags | `0.2.3` (published 2026-10-23; was `latest` until 2026-11-02) |
 
 **Two numbers, not one.** Strata has a release number and an engine number, and 0.2.3 ships engine **0.1.48**
 (0.2.2 shipped 0.1.47, 0.2.1 shipped 0.1.46). We tag the image with the release, because that is the number a
@@ -85,34 +109,7 @@ rows exist for 0.1.48 yet.
 
 ---
 
-## The test tag: 0.2.9.b-test (engine 0.1.55)
-
-Not a release — `latest` and `0.2.3` are untouched. Pullable and gated, for anyone who wants the newer
-application layer before it is promoted.
-
-| | |
-| --- | --- |
-| Image tag | `xxdoman/strata-mi50:0.2.9.b-test` (7.73 GB) |
-| Manifest digest | `sha256:76542269a1d280341e1486cb8165a7a3a5e5c9404500d7fd09d34bbead2c470f` |
-| Engine binary sum | `sha256 905c35dc5b8870d9f68ad9372691ca7ffbc590c18f5015f9040b6215575f86f8` (44 300 472 B) |
-| Engine reports | `engine=0.1.55`; release `0.2.9`; `--families` = `qwen4exp qwen35moe` |
-| Built from | upstream tag `v0.2.9` (`c62d5e3`, 2026-10-31); engines come from commit `99866a47` — plus our E-set |
-| Published | 2026-11-01, test tag only |
-
-Upstream 0.2.8/0.2.9 name Strix Halo, NVIDIA, Intel Arc B, RDNA **gfx12**, DeepSeek GGUF layouts and
-Unsloth 1-bit sets; **gfx906 is not named anywhere**, so this tag claims **no speed**. An A/B against 0.1.52
-(one MI50, 80 W, same model and flags, four interleaved arms) came out at **parity within run-to-run
-spread** — the spread is wider than the difference, so no throughput numbers are published. What it does
-carry is the 0.2.9 server/tools/`data/` and two E-set hunks re-based against upstream moves: the 512-row
-attention warmup (upstream #4708 caps by context alone) and `X(12)` = Q4_K, still absent from
-`STRATA_D_FMTS`. `0.2.8` was skipped on purpose — 0.2.9 supersedes it two days later.
-
-**Full page:** [docs/engines/0.2.9.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.9.md)
-· [wiki](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.9)
-
----
-
-## The previous release: 0.2.1 (engine 0.1.46)
+## The release before that: 0.2.1 (engine 0.1.46)
 
 | | |
 | --- | --- |
@@ -267,9 +264,9 @@ Every link below is absolute on purpose: relative paths do not work on the Docke
 | Page | In this repository | On the wiki |
 | --- | --- | --- |
 | Engine index — all tags, sums, status | [docs/engines](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/README.md) | [Engines](https://github.com/xxDoman/strata-gfx906/wiki/Engines) |
-| Engine 0.2.3 — the released one (`latest`) | [docs/engines/0.2.3.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.3.md) | [Engine-0.2.3](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.3) |
-| Engine 0.2.9 — the test tag | [docs/engines/0.2.9.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.9.md) | [Engine-0.2.9](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.9) |
-| Engine 0.2.1 — previous release | [docs/engines/0.2.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.1.md) | [Engine-0.2.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.1) |
+| Engine 0.2.9 — the released one (`latest`) | [docs/engines/0.2.9.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.9.md) | [Engine-0.2.9](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.9) |
+| Engine 0.2.3 — previous release | [docs/engines/0.2.3.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.3.md) | [Engine-0.2.3](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.3) |
+| Engine 0.2.1 — older release | [docs/engines/0.2.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.1.md) | [Engine-0.2.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.2.1) |
 | Engine 0.1.45 — older release | [docs/engines/0.1.45.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.45.md) | [Engine-0.1.45](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.45) |
 | Engine 0.1.43.1 — older release, still pullable | [docs/engines/0.1.43.1.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md) | [Engine-0.1.43.1](https://github.com/xxDoman/strata-gfx906/wiki/Engine-0.1.43.1) |
 | Image history — what is in each tag, which fixes are ours | [docs/image-history.md](https://github.com/xxDoman/strata-gfx906/blob/master/docs/image-history.md) | [image-history](https://github.com/xxDoman/strata-gfx906/wiki/image-history) |

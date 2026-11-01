@@ -7,7 +7,7 @@ worth in a measurement. Upstream's own engine changelog lives in their repositor
 ## Tags we built
 
 ```
-0.2.9.b-test     0.2.3            0.2.1            0.1.45           0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
+0.2.9            0.2.3            0.2.1            0.1.45           0.1.39           0.1.40            0.1.41            0.1.42            0.1.43            0.1.43.1
   0.1.39-v3        0.1.40.4         0.1.41.v2         0.1.42-roc981     0.1.43-roc981     0.1.43.1-roc981
   0.1.39-854       0.1.40-i1187     0.1.41-roc981
                    0.1.40-pool
@@ -181,7 +181,7 @@ bigger default prompt chunk — which is exactly what makes **E1** mandatory rat
 
 Full page: [docs/engines/0.1.45.md](engines/0.1.45.md).
 
-## 0.2.3 (published 2026-10-23) — the current release
+## 0.2.3 (published 2026-10-23) — the previous release
 
 Upstream **v0.2.3** (`5c8dd32`, 424 commits, 566 files since 0.2.1) plus our **E-set** — this one is not a
 clean build. Two patches of ours were absorbed upstream and are no longer applied: the W4A4 gate (#3172, the
@@ -209,7 +209,7 @@ GPU cache*, so the `resident RAM: X GiB` line is that complement, not the budget
 
 Full page: [docs/engines/0.2.3.md](engines/0.2.3.md).
 
-## 0.2.9.b-test (published 2026-11-01) — a test tag, not a release
+## 0.2.9 (published 2026-11-02) — the current release
 
 Upstream **v0.2.9** (`c62d5e3`, engines from commit `99866a47`, 31 Oct) plus our **E-set**, re-based: two
 hunks no longer applied, because upstream moved under them. The attention-score-buffer fix keeps the 512-row
@@ -225,7 +225,7 @@ was parity within run-to-run spread).
 | | |
 |---|---|
 | Engine | `905c35dc5b8870d9…` (44 300 472 B), `engine=0.1.55`, families `qwen4exp qwen35moe` |
-| Image | `sha256:76542269a1d28034…` (7.73 GB), tag `0.2.9.b-test` only — `latest` stays on 0.2.3 |
+| Image | `sha256:76542269a1d28034…` (7.73 GB), tags `0.2.9` + `latest` |
 | Build | container `rocm/dev-ubuntu-24.04:7.2.1`, same flags, llama.cpp pin `3cf03257` reused; 166 targets, 0 errors |
 | Release gate | passed (boot, ISA 0 violations, no `vpdpbusd`, Haswell qemu probe, model scan, registry tags); point (d) GPU pack load **not** run |
 | Not in it | a speed claim, a GPU pack-load run, DFlash2 on gfx906 (still 0 of 126 drafts) |

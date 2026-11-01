@@ -7,13 +7,13 @@
 
 - The **packaging** for running the **Strata** inference engine on AMD **gfx906** cards (Vega 20:
   Instinct MI50 / MI60, Radeon VII) as a Docker image with a web configurator.
-- Published image: `xxdoman/strata-mi50:0.2.3` and `:latest` — release **0.2.3**, engine **0.1.48**
-  (upstream tag `v0.2.3`, `5c8dd32`). `0.2.1` is the previous release (engine 0.1.46) and was `latest`
-  until 2026-10-23. Digest `sha256:2320ecd43a7f…`, engine binary `17819efa…`.
-- Test tag, published but **not** promoted: `xxdoman/strata-mi50:0.2.9.b-test` — release 0.2.9, engine
-  **0.1.55** (engines from commit `99866a47`), engine binary `905c35dc…`, digest `sha256:76542269a1d2…`.
+- Published image: `xxdoman/strata-mi50:0.2.9` and `:latest` — release **0.2.9**, engine **0.1.55**
+  (engines from commit `99866a47`, 31 Oct 2026). Digest `sha256:76542269a1d2…`, engine binary `905c35dc…`.
   gfx906 is named in none of the 0.2.8/0.2.9 notes; an A/B against 0.1.52 on one MI50 at 80 W was **parity
-  within run-to-run spread**, so this tag claims **no speed** — it is the newer application layer only.
+  within run-to-run spread**, so this release claims **no speed** — it is the newer application layer only.
+- Previous release: `0.2.3` — engine **0.1.48** (upstream tag `v0.2.3`, `5c8dd32`), digest
+  `sha256:2320ecd43a7f…`, engine binary `17819efa…`; it was `latest` until 2026-11-02. `0.2.1` (engine
+  0.1.46) is the one before that.
 - On gfx906 the 0.2.3 engine needs a small patch set (this one is not a clean build): two fixes of ours went
   upstream in 0.2.1 (#3172 W4A4, #3271 `f16kq`), and what remains is the rocBLAS solution-table reader wired
   for gfx906 with the tuned gfx906 table plus `STRATA_HIP_PROMPT_F16=1`, the qwen35/36 engine restored for
