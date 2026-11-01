@@ -10,6 +10,9 @@ Two things to keep separate before you quote any tag:
 - **`0.2.3` / `latest`** is the **published** image. It is what `docker pull` gives you, and it is the
   only engine here that a reader can reproduce. **`0.2.1`** is the previous release (it was `latest`
   until 2026-10-23).
+- **`0.2.9.b-test`** (engine **0.1.55**) is the current **test** tag, published on 2026-11-01 and pullable,
+  but not promoted: `latest` still points at `0.2.3`. Its A/B against 0.1.52 came out at parity within
+  run-to-run spread, so it carries no speed claim — it is the newer application layer, nothing more.
 - The **`0.1.44.1.b` … `.1.g`** line is built and smoke-tested **locally** (same engine binary, different
   configurator). None of those tags was pushed, so no registry digest exists for them and nobody outside
   this machine can pull them. They are documented here because they are real measurements and real
@@ -17,6 +20,7 @@ Two things to keep separate before you quote any tag:
 
 | Image tag | Image sum (short) | Engine binary | What it fixes | On Docker Hub |
 | --- | --- | --- | --- | --- |
+| [`0.2.9.b-test`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.9.md) | `76542269a1d2` (`sha256:76542269a1d28034…`) | `905c35dc…` (44 300 472 B) | engine **0.1.55** from v0.2.9 (engines from `99866a47`) + our E-set re-based: 512-row warmup against #4708, `X(12)` inserted by hand again, rocBLAS reader + gfx906 table + FP16 prompt path, qwen35/36 restored, DFlash2 stream-priority names; ISA guard whitelist completed upstream-side | **yes** — test tag (2026-11-01) |
 | [`0.2.3`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.3.md) · `latest` | `2320ecd43a7f` (`sha256:2320ecd43a7f2c7e…`) | `17819efa…` (39 383 936 B) | engine 0.1.48 from v0.2.3 + our E-set: rocBLAS table wired + gfx906 table + FP16 prompt path, qwen35/36 restored, DFlash2 CUDA names; W4A4 and `f16kq` are upstream now | **yes** (2026-10-23) |
 | [`0.2.1`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.2.1.md) | `23ed0e3586c6` (`sha256:23ed0e3586c6ebb727fda…`) | `7a8e2beb…` (38 443 528 B) | clean v0.2.1 for gfx906; rocBLAS table wired + gfx906 table + FP16 prompt path; qwen35/36 restored | **yes** (2026-10-21, was `latest` until 2026-10-23) |
 | [`0.1.43.1`](https://github.com/xxDoman/strata-gfx906/blob/master/docs/engines/0.1.43.1.md) | `6e9002179e55` (`sha256:6e9002179e55…`) | `c78456f3…` | upstream 0.1.43.1 hotfix + our rocBLAS table reader, AMD report header, per-card VRAM reserve floor | **yes** |

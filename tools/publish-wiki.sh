@@ -129,6 +129,7 @@ map_lines() {
   cat <<'MAP'
 docs/engines/README.md|Engines.md
 docs/engines/0.2.3.md|Engine-0.2.3.md
+docs/engines/0.2.9.md|Engine-0.2.9.md
 docs/engines/0.2.1.md|Engine-0.2.1.md
 docs/engines/0.1.45.md|Engine-0.1.45.md
 docs/engines/0.1.43.1.md|Engine-0.1.43.1.md
